@@ -1,0 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Quantico:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+@import "tailwindcss";
+@import "tailwindcss-animated";
+
+
+@theme {
+  --font-quantico: 'Quantico', sans-serif;
+  @keyframes logo-cloud {
+    from { transform: translateX(0); }
+    to   { transform: translateX(calc(-100% - 4rem)); }
+  }
+  --animate-logo-cloud: logo-cloud 30s linear infinite;
+}
+
+@layer utilities {
+  .animate-logo-cloud {
+    animation: var(--animate-logo-cloud);
+  }
+}
+
