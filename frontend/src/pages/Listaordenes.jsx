@@ -10,7 +10,7 @@ import {
   Text, 
   View, 
   StyleSheet, 
-  Font 
+  Image 
 } from '@react-pdf/renderer';
 
 const link = import.meta.env.PROD 
@@ -197,7 +197,11 @@ const Listaordenes = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pdfReady, setPdfReady] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   
+  useEffect(() => {
+      setIsClient(true);
+    }, []);
   const fetchOrders = async () => {
     try {
       const response = await fetch(`${link}/api/orders/`);
@@ -331,7 +335,7 @@ const Listaordenes = () => {
           <Download size={16} className="mr-2" />
           Exportar Lista
         </button>
-        {pdfReady && (
+        {pdfReady && isClient &&(
           <div style={{ display: 'none' }}>
             <PDFDownloadLink
               document={<OrdersPDF orders={filteredOrders} />}
