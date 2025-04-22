@@ -5,8 +5,8 @@ const authRoutes = require('./routes/authRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const path = require('path');
 const cors = require('cors');
-
 require('dotenv').config();
+
 
 if (!process.env.JWT_SECRET) {
     console.error('CRITICAL ERROR: JWT_SECRET is not defined in environment variables');
@@ -14,7 +14,11 @@ if (!process.env.JWT_SECRET) {
   }
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: 'https://frontend-buffstore.onrender.com',
+  credentials: true,
+}));
+
 app.use(express.json());
 
 app.use('/api/products', productRoutes);
