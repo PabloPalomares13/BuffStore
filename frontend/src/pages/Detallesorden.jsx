@@ -564,7 +564,7 @@ const Detallesorden = () => {
                           <div className="h-16 w-16 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden mr-4">
                             {/* Placeholder para la imagen del producto */}
                             <img
-                              src={`http://localhost:3000/api/products/image/${item.productId}/0`}
+                              src={`${link}/api/products/image/${item.productId}/0`}
                               alt={item.name}
                               className="w-full h-full object-cover"
                             />

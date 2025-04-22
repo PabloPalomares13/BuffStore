@@ -14,13 +14,6 @@ if (!process.env.JWT_SECRET) {
   }
 
 const app = express();
-
-app.use(express.static(path.join(__dirname, 'dist')));
-
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
-});
-
 const allowedOrigins = [
   'http://localhost:5173', // Vite frontend local
   'http://localhost:3000', // Backend local (si haces peticiones entre backends o pruebas con Postman)
