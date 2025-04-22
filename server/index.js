@@ -14,9 +14,22 @@ if (!process.env.JWT_SECRET) {
   }
 
 const app = express();
+const allowedOrigins = [
+  'http://localhost:5173', // Vite frontend local
+  'http://localhost:3000', // Backend local (si haces peticiones entre backends o pruebas con Postman)
+  'https://frontend-buffstore.onrender.com' // Producción
+];
 app.use(cors({
-  origin: 'https://frontend-buffstore.onrender.com',
-  credentials: true,
+  origin: function (origin, callback) {
+    // Permitir solicitudes sin origen (como Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('CORS not allowed for this origin'));
+    }
+  },
+  credentials: true
 }));
 
 app.use(express.json());
