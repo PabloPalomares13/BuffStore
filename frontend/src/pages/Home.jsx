@@ -1,5 +1,7 @@
 import imghome from "../assets/imghome.png";
 import React, { useState, useEffect } from 'react';
+import { LazyLoadImage } from 'react-lazy-load-image-component';
+import 'react-lazy-load-image-component/src/effects/blur.css'; 
 
 const link = import.meta.env.PROD 
   ? import.meta.env.VITE_BACKEND_URL
@@ -46,29 +48,46 @@ const logos = [
   
 
     const fetchProducts = async () => {
-        try {
-          const response = await fetch(`${link}/api/products`);
-          if (!response.ok) {
-            throw new Error("Error al obtener los productos");
-          }
-          const data = await response.json();
-          
-          // Procesar las imágenes de cada producto si existen
-          const productsWithImageUrls = data.map(product => {
-            if (product.images && product.images.length > 0) {
-              const imageUrl = `${link}/api/products/image/${product._id}/0`;
-              return { ...product, displayImageUrl: imageUrl };
-            }
-            return product;
-          });
-          
-          setProducts(productsWithImageUrls || []);
-          setLoading(false);
-        } catch (err) {
-          console.error(err);
-          setLoading(false);
+      try {
+        const response = await fetch(`${link}/api/products`);
+        if (!response.ok) {
+          throw new Error("Error al obtener los productos");
         }
-      };
+        const data = await response.json();
+        
+        // En lugar de crear URLs para todas las imágenes de inmediato,
+        // se cargan las imágenes de forma progresiva o bajo demanda
+        const productsWithPlaceholders = data.map(product => {
+          if (product.images && product.images.length > 0) {
+            return { 
+              ...product, 
+              displayImageUrl: '/path/to/placeholder.jpg',
+              realImageUrl: `${link}/api/products/image/${product._id}/0`  
+            };
+          }
+          return product;
+        });
+        
+        setProducts(productsWithPlaceholders || []);
+        setLoading(false);
+        
+        // Cargar las imágenes reales en segundo plano
+        if (productsWithPlaceholders.length > 0) {
+          setTimeout(() => {
+            const productsWithRealImages = productsWithPlaceholders.map(product => {
+              if (product.realImageUrl) {
+                return { ...product, displayImageUrl: product.realImageUrl };
+              }
+              return product;
+            });
+            setProducts(productsWithRealImages);
+          }, 100); // Pequeño retraso para priorizar la UI
+        }
+      } catch (err) {
+        console.error(err);
+        setLoading(false);
+      }
+    };
       useEffect(() => {
         fetchProducts();
       }, []);

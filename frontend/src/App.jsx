@@ -12,6 +12,7 @@ import Detallesorden from './pages/Detallesorden';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Checkout from './pages/Checkout';
+import ChatBot from './pages/ChatBot';
 
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
@@ -24,6 +25,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 function App() {
   return (
   <Router>
+    <ChatBot />
     <Routes>
 
     <Route element={<MainLayout/>}>

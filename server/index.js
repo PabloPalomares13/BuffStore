@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const productRoutes = require('./routes/productRoutes');
 const authRoutes = require('./routes/authRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const geminiRoutes = require('./routes/geminiRoutes');
 const path = require('path');
 const cors = require('cors');
 require('dotenv').config();
@@ -16,12 +17,11 @@ if (!process.env.JWT_SECRET) {
 const app = express();
 const allowedOrigins = [
   'http://localhost:5173', // Vite frontend local
-  'http://localhost:3000', // Backend local (si haces peticiones entre backends o pruebas con Postman)
+  'http://localhost:3000', // Backend local 
   'https://frontend-buffstore.onrender.com' // Producción
 ];
 app.use(cors({
   origin: function (origin, callback) {
-    // Permitir solicitudes sin origen (como Postman)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
@@ -32,12 +32,14 @@ app.use(cors({
   credentials: true
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
 
 app.use('/api/products', productRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
-
+app.use('/api/gemini', geminiRoutes);
 
 
 mongoose.connect(process.env.MONGO_URI)
