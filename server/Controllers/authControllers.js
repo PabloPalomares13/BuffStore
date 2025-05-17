@@ -22,13 +22,19 @@ const registerUser = async (req, res) => {
         message: 'Usuario ya existe con ese email o ID personal' 
       });
     }
-    // Crear nuevo usuario
     const user = await User.create({
       typeID,
       personalID,
       email,
       password
     });
+    // Crear nuevo usuario
+    // const user = await User.create({
+    //   typeID,
+    //   personalID,
+    //   email,
+    //   password
+    // });
     
     if (user) {
       res.status(201).json({
@@ -55,7 +61,8 @@ const loginUser = async (req, res) => {
     const { email, password } = req.body;
     
     // Verificar si existe el usuario
-    const user = await User.findOne({ email });
+    const user = await userOperations.findOne({ email });
+    // const user = await User.findOne({ email });
     
     // Si el usuario existe y la contraseña coincide
     if (user && (await user.comparePassword(password))) {
