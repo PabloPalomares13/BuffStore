@@ -20,7 +20,7 @@ import NewProduct from './pages/NewProduct';
 import AuthLayout from './layouts/AuthLayout';
 
 import ProtectedRoute from './components/ProtectedRoute';
-
+import ProductDetail from './pages/ProductDetail';
 
 function App() {
   return (
@@ -32,6 +32,7 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/home" element={<Home />} />
       <Route path="/checkout" element={<Checkout />} />
+      <Route path="/product/:id" element={<ProductDetail />} />
 
     </Route>
 

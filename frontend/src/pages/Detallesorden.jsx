@@ -375,24 +375,47 @@ const Detallesorden = () => {
 
   // Función para obtener los datos de la orden específica
   const fetchOrderDetails = async () => {
-    try {
-      const response = await fetch(`${link}/api/orders/${id}`);
-  
-      if (!response.ok) {
-        throw new Error("Error al obtener la información de la orden");
-      }
-  
-      const data = await response.json();
-      console.log("Datos de la orden:", data);
-  
-      setOrder(data);
-      setLoading(false);
-    } catch (err) {
-      console.error("Error al obtener los detalles de la orden:", err);
-      setError(err.message);
-      setLoading(false);
+  try {
+    const response = await fetch(`${link}/api/orders/${id}`);
+    
+    if (!response.ok) {
+      throw new Error("Error al obtener la información de la orden");
     }
-  };
+    
+    const data = await response.json();
+    console.log("Datos de la orden:", data);
+    
+    // Obtener detalles completos de cada producto
+    if (data.products && Array.isArray(data.products)) {
+      const productsWithDetails = await Promise.all(
+        data.products.map(async (item) => {
+          try {
+            const productResponse = await fetch(`${link}/api/products/${item.productId}`);
+            if (productResponse.ok) {
+              const productDetails = await productResponse.json();
+              return {
+                ...item,
+                productDetails // Agregar los detalles completos del producto
+              };
+            }
+          } catch (error) {
+            console.error(`Error fetching product ${item.productId}:`, error);
+          }
+          return item; // Retornar el item original si falla
+        })
+      );
+      
+      data.products = productsWithDetails;
+    }
+    
+    setOrder(data);
+    setLoading(false);
+  } catch (err) {
+    console.error("Error al obtener los detalles de la orden:", err);
+    setError(err.message);
+    setLoading(false);
+  }
+};
   
   useEffect(() => {
     if (id) {
@@ -564,9 +587,16 @@ const Detallesorden = () => {
                           <div className="h-16 w-16 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden mr-4">
                             {/* Placeholder para la imagen del producto */}
                             <img
-                              src={`${link}/api/products/image/${item.productId}/0`}
+                              src={
+                                item.productDetails?.images?.[0] || 
+                                `${link}/api/products/image/${item.productId}/0`
+                              }
                               alt={item.name}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                console.error('Image failed to load, trying fallback');
+                                e.target.src = `${link}/api/products/image/${item.productId}/0`;
+                              }}
                             />
                           </div>
                           <div>

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import 'react-lazy-load-image-component/src/effects/blur.css'; 
 
+import { useNavigate } from 'react-router-dom';
 const link = import.meta.env.PROD 
   ? import.meta.env.VITE_BACKEND_URL
   : 'http://localhost:3000'
@@ -38,56 +39,49 @@ const logos = [
       url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Sony_logo.svg/250px-Sony_logo.svg.png',
     },
   ]
-
+  
   const Home = () => {
 
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
-  
+    
+    const navigate = useNavigate();
+    const handleProductClick = (productId) => {
+    navigate(`/product/${productId}`);
+    };
 
     const fetchProducts = async () => {
-      try {
-        const response = await fetch(`${link}/api/products`);
-        if (!response.ok) {
-          throw new Error("Error al obtener los productos");
-        }
-        const data = await response.json();
-        
-        // En lugar de crear URLs para todas las imágenes de inmediato,
-        // se cargan las imágenes de forma progresiva o bajo demanda
-        const productsWithPlaceholders = data.map(product => {
-          if (product.images && product.images.length > 0) {
-            return { 
-              ...product, 
-              displayImageUrl: '/path/to/placeholder.jpg',
-              realImageUrl: `${link}/api/products/image/${product._id}/0`  
-            };
-          }
-          return product;
-        });
-        
-        setProducts(productsWithPlaceholders || []);
-        setLoading(false);
-        
-        // Cargar las imágenes reales en segundo plano
-        if (productsWithPlaceholders.length > 0) {
-          setTimeout(() => {
-            const productsWithRealImages = productsWithPlaceholders.map(product => {
-              if (product.realImageUrl) {
-                return { ...product, displayImageUrl: product.realImageUrl };
-              }
-              return product;
-            });
-            setProducts(productsWithRealImages);
-          }, 100); // Pequeño retraso para priorizar la UI
-        }
-      } catch (err) {
-        console.error(err);
-        setLoading(false);
+  try {
+    const response = await fetch(`${link}/api/products`);
+    if (!response.ok) {
+      throw new Error("Error al obtener los productos");
+    }
+    const data = await response.json();
+    
+    // Ahora las imágenes son URLs directas de Google Cloud Storage
+    const productsWithImages = data.map(product => {
+      if (product.images && product.images.length > 0) {
+        return { 
+          ...product, 
+          displayImageUrl: product.images[0] // Usar directamente la URL de GCS
+        };
       }
-    };
+      return {
+        ...product,
+        displayImageUrl: '/path/to/placeholder.jpg' // Tu placeholder
+      };
+    });
+    
+    setProducts(productsWithImages || []);
+    setLoading(false);
+    
+  } catch (err) {
+    console.error(err);
+    setLoading(false);
+  }
+};
       useEffect(() => {
         fetchProducts();
       }, []);
@@ -136,12 +130,12 @@ const logos = [
         <div className="px-4 sm:px-6 md:px-8 lg:px-12 mx-auto max-w-7xl pt-32 sm:pt-32 md:pt-24 lg:pt-36 mb-32">
             <div className="flex flex-col md:flex-row items-center gap-6 md:gap-12 lg:gap-16">
                 <div className="w-full md:w-1/2 lg:w-5/12">
-                    <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl text-[#DFE8D8] font-extrabold leading-tight text-left sm:text-center">
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl text-[#DFE8D8] font-extrabold leading-tight sm:text-center text-center">
                         Busca, Compra y Disfruta
                     </h1>
                     <div className="mt-4 sm:mt-6">
                         <h2 
-                            className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-bold text-transparent bg-clip-text "
+                            className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-bold text-transparent bg-clip-text text-center "
                             style={{
                                 backgroundImage: 'linear-gradient(90deg, rgba(189, 157, 212, 1) 0%, rgba(150, 217, 210, 1) 99%)'
                             }}
@@ -219,35 +213,53 @@ const logos = [
           </div>
         ) : (
           <div className="py-20 px-4 grid grid-cols-1 sm:max-sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center gap-y-20 gap-x-14 mt-10 mb-5">
-            {products.map(product => (
-              <div 
-                key={product._id} 
-                className="w-86 h-130 bg-white/85 rounded-xl shadow-lg border border-white/10 duration-500 hover:scale-105 hover:shadow-xl"
-              >
-                {product.displayImageUrl && (
-                        <img src={product.displayImageUrl} alt={product.name} className="h-80 w-full object-cover rounded-t-xl" />  
-                      )}   
-                <div className="p-4">
-                  
-                  <span className="inline-block px-3 py-1 text-xs text-white rounded-lg bg-[#E39F71] mb-2"> 
-                    {product.tags || product.category}
-                  </span>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-1 font-bold">{product.name}</h3>
-                  <div className="text-lg font-semibold text-black cursor-auto my-3">
-                    ${Number(product.price).toLocaleString('en-US')}
-                  </div>
-                  <button 
-                    id="agregarAlCarrito"
-                    style={{ backgroundImage: "linear-gradient(90deg,rgba(189, 157, 212, 1) 0%, rgba(125, 209, 199, 1) 99%)"}}
-                    className="w-full py-2 px-4  text-white rounded-full hover:opacity-90 transition-opacity duration-300"
-                    onClick={() => handleAddToCart(product)}
-                  >
-                    Agregar al carrito
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+  {products.map(product => (
+    <div 
+      key={product._id} 
+      className="w-86 h-130 bg-white/85 rounded-xl shadow-lg border border-white/10 duration-500 hover:scale-105 hover:shadow-xl cursor-pointer"
+      onClick={() => handleProductClick(product._id)} // Hacer clickeable toda la card
+    >
+      {product.displayImageUrl ? (
+        <img 
+          src={product.displayImageUrl} 
+          alt={product.name} 
+          className="h-80 w-full object-cover rounded-t-xl"
+          onError={(e) => {
+            console.error('Image failed to load:', product.displayImageUrl);
+            if (!e.target.src.includes('/api/products/image/')) {
+              e.target.src = `${link}/api/products/image/${product._id}/0`;
+            }
+          }}
+        />
+      ) : (
+        <div className="h-80 w-full bg-gray-200 rounded-t-xl flex items-center justify-center">
+          <span className="text-gray-500">No image available</span>
+        </div>
+      )}
+      
+      <div className="p-4">
+        <span className="inline-block px-3 py-1 text-xs text-white rounded-lg bg-[#E39F71] mb-2"> 
+          {product.tags || product.category}
+        </span>
+        <h3 className="text-lg font-semibold text-gray-800 mb-1 font-bold">{product.name}</h3>
+        <div className="text-lg font-semibold text-black cursor-auto my-3">
+          ${Number(product.price).toLocaleString('en-US')}
+        </div>
+        <button 
+          id="agregarAlCarrito"
+          style={{ backgroundImage: "linear-gradient(90deg,rgba(189, 157, 212, 1) 0%, rgba(125, 209, 199, 1) 99%)"}}
+          className="w-full py-2 px-4 text-white rounded-full hover:opacity-90 transition-opacity duration-300"
+          onClick={(e) => {
+            e.stopPropagation(); // Evitar que se active el click del card
+            handleAddToCart(product);
+          }}
+        >
+          Agregar al carrito
+        </button>
+      </div>
+    </div>
+  ))}
+</div>
         )}
         
         {showModal && (

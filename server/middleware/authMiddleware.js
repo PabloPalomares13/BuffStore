@@ -14,8 +14,8 @@ const protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
       // Obtener el usuario desde la base de datos
-      req.user = await userOperations.findById(decoded.id, '-password');
-      // req.user = await User.findById(decoded.id).select('-password');
+      // req.user = await userOperations.findById(decoded.id, '-password');
+      req.user = await User.findById(decoded.id).select('-password');
       
       next();
     } catch (error) {

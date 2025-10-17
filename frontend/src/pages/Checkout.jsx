@@ -36,46 +36,68 @@ const Checkout = () => {
 
   // Cargar datos del carrito desde localStorage
   useEffect(() => {
-    const loadCartData = async () => {
-      try {
-        const savedCart = JSON.parse(localStorage.getItem('cart')) || [];
+  const loadCartData = async () => {
+    try {
+      const savedCart = JSON.parse(localStorage.getItem('cart')) || [];
 
-        // Si hay productos en el carrito, obtener detalles actualizados de cada uno
-        if (savedCart.length > 0) {
-          const updatedCart = await Promise.all(
-            savedCart.map(async (item) => {
-              try {
-                // Obtener información actualizada del producto (stock, precio, etc.)
-                const response = await axios.get(`${link}/api/products/${item._id}`);
-                return {
-                  _id: response.data._id,
-                  name: response.data.name,
-                  price: response.data.price,
-                  stock: response.data.stock,
-                  taxRate: response.data.taxRate,
-                  quantity: item.quantity || 1,
-                  displayImageUrl: `${link}/api/products/image/${response.data._id}/0`
-                };
-              } catch (err) {
-                console.error(`Error al obtener detalles del producto ${item._id}:`, err);
-                // En caso de error, devolvemos un objeto básico con la información que tenemos
-                return { _id: item._id, name: 'Producto no encontrado', price: 0, quantity: item.quantity || 0 };
+      // Si hay productos en el carrito, obtener detalles actualizados de cada uno
+      if (savedCart.length > 0) {
+        const updatedCart = await Promise.all(
+          savedCart.map(async (item) => {
+            try {
+              // Obtener información actualizada del producto (stock, precio, etc.)
+              const response = await axios.get(`${link}/api/products/${item._id}`);
+              
+              // Determinar la URL de la imagen según el formato
+              let displayImageUrl = null;
+              
+              if (response.data.images && Array.isArray(response.data.images) && response.data.images.length > 0) {
+                if (typeof response.data.images[0] === 'string') {
+                  // Nuevo formato: URL directa de Google Cloud Storage
+                  displayImageUrl = response.data.images[0];
+                  console.log('Cart item using GCS URL:', displayImageUrl);
+                } else if (response.data.images[0] && response.data.images[0].data) {
+                  // Formato antiguo: imagen binaria en MongoDB
+                  displayImageUrl = `${link}/api/products/image/${response.data._id}/0`;
+                  console.log('Cart item using binary format URL:', displayImageUrl);
+                }
               }
-            })
-          );
+              
+              return {
+                _id: response.data._id,
+                name: response.data.name,
+                price: response.data.price,
+                stock: response.data.stock,
+                taxRate: response.data.taxRate,
+                quantity: item.quantity || 1,
+                displayImageUrl // URL actualizada según el formato
+              };
+            } catch (err) {
+              console.error(`Error al obtener detalles del producto ${item._id}:`, err);
+              // En caso de error, devolvemos un objeto básico con la información que tenemos
+              return { 
+                _id: item._id, 
+                name: 'Producto no encontrado', 
+                price: 0, 
+                quantity: item.quantity || 0,
+                displayImageUrl: null 
+              };
+            }
+          })
+        );
 
-          setCart(updatedCart);
-        }
-
-        setLoading(false);
-      } catch (err) {
-        console.error("Error al cargar el carrito:", err);
-        setLoading(false);
+        setCart(updatedCart);
       }
-    };
 
-    loadCartData();
-  }, []);
+      setLoading(false);
+    } catch (err) {
+      console.error("Error al cargar el carrito:", err);
+      setLoading(false);
+    }
+  };
+
+  loadCartData();
+}, []); 
 
   // Calcular totales cuando cambia el carrito
   useEffect(() => {
@@ -224,7 +246,7 @@ const Checkout = () => {
     <div className="min-h-screen bg-gray-50 py-12 pt-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Checkout</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Mi carrito de compras 🛒</h1>
           <p className="mt-2 text-gray-600">Completa tu compra</p>
         </div>
         
@@ -501,7 +523,7 @@ const Checkout = () => {
             
             {/* Columna derecha: Resumen */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-md p-6 sticky top-6">
+              <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
                 <h2 className="text-xl font-semibold mb-4">Resumen de la orden</h2>
                 
                 <div className="space-y-4">

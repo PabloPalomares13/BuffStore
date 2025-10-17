@@ -43,43 +43,57 @@ const Modproducto = () => {
   }, [id]);
   
   const fetchProductDetails = async () => {
-    try {
-      const response = await fetch(`${link}/api/products/${id}`);
-      if (!response.ok) {
-        throw new Error('Error al obtener los detalles del producto');
-      }
-      const data = await response.json();
-      
-      // Initialize form with product data
-      setProductData({
-        name: data.name || '',
-        code: data.code || '',
-        description: data.description || '',
-        price: data.price || '',
-        stock: data.stock || '',
-        taxRate: data.taxRate || '',
-        category: data.category || '',
-        tags: data.tags || '',
-        brand: data.brand || '',
-        vendor: data.vendor || ''
-      });
-      
-      if (data.images && data.images.length > 0) {
-        setCurrentImages(data.images);
-        
-        // Construir URL completa para la imagen
-        // Verifica si la ruta ya incluye el dominio
-        const imageUrl = `${link}/api/products/image/${data._id}/0`;
-
-        setSelectedImage(imageUrl);
-      }
-      setLoading(false);
-    } catch (err) {
-      console.error(err);
-      setError(err.message);
-      setLoading(false);
+  try {
+    const response = await fetch(`${link}/api/products/${id}`);
+    if (!response.ok) {
+      throw new Error('Error al obtener los detalles del producto');
     }
-  };
+    const data = await response.json();
+    
+    console.log('Product data:', data); // Debug
+    console.log('Product images:', data.images); // Debug
+    
+    // Initialize form with product data
+    setProductData({
+      name: data.name || '',
+      code: data.code || '',
+      description: data.description || '',
+      price: data.price || '',
+      stock: data.stock || '',
+      taxRate: data.taxRate || '',
+      category: data.category || '',
+      tags: data.tags || '',
+      brand: data.brand || '',
+      vendor: data.vendor || ''
+    });
+    
+    if (data.images && data.images.length > 0) {
+      // Verificar si las imágenes son URLs de GCS o formato binario
+      if (typeof data.images[0] === 'string') {
+        // Nuevo formato: URLs directas de Google Cloud Storage
+        setCurrentImages(data.images);
+        setSelectedImage(data.images[0]); // Mostrar la primera imagen
+        console.log('Using GCS URL:', data.images[0]);
+      } else if (data.images[0].data) {
+        // Formato antiguo: imágenes binarias en MongoDB
+        setCurrentImages(data.images);
+        const imageUrl = `${link}/api/products/image/${data._id}/0`;
+        setSelectedImage(imageUrl);
+        console.log('Using binary format URL:', imageUrl);
+      }
+    } else {
+      console.log('Imagen no encontrada');
+      setCurrentImages([]);
+      setSelectedImage(null);
+    }
+    
+    setLoading(false);
+  } catch (err) {
+    console.error('Error fetching product:', err);
+    setError(err.message);
+    setLoading(false);
+  }
+};
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -123,16 +137,19 @@ const Modproducto = () => {
   };
   
   const handleImageChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setSelectedImage(URL.createObjectURL(file));
-      // Store the file for upload
-      setProductData(prev => ({
-        ...prev,
-        newImage: file
-      }));
-    }
-  };
+  if (e.target.files && e.target.files[0]) {
+    const file = e.target.files[0];
+    setSelectedImage(URL.createObjectURL(file)); // Preview local
+    
+    // Store the file for upload
+    setProductData(prev => ({
+      ...prev,
+      newImage: file
+    }));
+    
+    console.log('New image selected:', file.name);
+  }
+};
   
   const handleSubmit = async (e) => {
     e.preventDefault();

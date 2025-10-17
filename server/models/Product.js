@@ -13,11 +13,7 @@ const productSchema = new mongoose.Schema({
   tags: String,
   brand: String,
   vendor: String,
-  images: [{
-    data: Buffer,
-    contentType: String
-  }]
-  // images: [String] // Array of image URLs or paths
+  images: [String] // Array de URLs de Google Cloud Storage
 }, {
   timestamps: true
 });

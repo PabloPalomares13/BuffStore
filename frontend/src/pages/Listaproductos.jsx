@@ -221,16 +221,21 @@ const Listaproductos = () => {
       }
       const data = await response.json();
       
-      // Procesar las imágenes de cada producto si existen
-      const productsWithImageUrls = data.map(product => {
+      // Ahora las imágenes son URLs directas de Google Cloud Storage
+      const productsWithImages = data.map(product => {
         if (product.images && product.images.length > 0) {
-          const imageUrl = `${link}/api/products/image/${product._id}/0`;
-          return { ...product, displayImageUrl: imageUrl };
+          return { 
+            ...product, 
+            displayImageUrl: product.images[0] // Usar directamente la URL de GCS
+          };
         }
-        return product;
+        return {
+          ...product,
+          displayImageUrl: '/path/to/placeholder.jpg' // Tu placeholder
+        };
       });
       
-      setProducts(productsWithImageUrls || []);
+      setProducts(productsWithImages || []);
       setPagination(prev => ({ ...prev, total: data.length || 0 }));
       setLoading(false);
     } catch (err) {

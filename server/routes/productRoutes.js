@@ -1,31 +1,62 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const path = require('path');
 const Product = require('../models/Product');
-const fs = require('fs');
+const { uploadFileToGCS, deleteFileFromGCS, generateFileName } = require('../config/storage');
 
-// Configuración de multer para guardar imágenes
+// Configuración de multer para manejar archivos en memoria
 const storage = multer.memoryStorage();
-
-const upload = multer({ storage });
+const upload = multer({ 
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB límite por archivo
+  },
+  fileFilter: (req, file, cb) => {
+    // Filtrar solo imágenes
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten archivos de imagen'), false);
+    }
+  }
+});
 
 // Crear producto
 router.post('/', upload.array('images', 5), async (req, res) => {
   try {
-    const imageObjects = req.files.map(file => ({
-      data: file.buffer || fs.readFileSync(file.path),
-      contentType: file.mimetype
-    }));
-    
+    // Crear el producto primero para obtener el ID
     const product = new Product({ 
-      ...req.body, 
-      images: imageObjects 
+      ...req.body,
+      images: [] // Inicialmente vacío
     });
     
-    await product.save();
-    res.status(201).json(product);
+    const savedProduct = await product.save();
+
+    // Si hay archivos, subirlos a GCS
+    if (req.files && req.files.length > 0) {
+      const imageUrls = [];
+      
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        const fileName = generateFileName(file.originalname, savedProduct._id, i);
+        
+        try {
+          const imageUrl = await uploadFileToGCS(file, fileName);
+          imageUrls.push(imageUrl);
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          // Si falla la subida de imagen, continuamos con las demás
+        }
+      }
+      
+      // Actualizar el producto con las URLs de las imágenes
+      savedProduct.images = imageUrls;
+      await savedProduct.save();
+    }
+    
+    res.status(201).json(savedProduct);
   } catch (error) {
+    console.error('Error creating product:', error);
     res.status(400).json({ error: error.message });
   }
 });
@@ -54,20 +85,53 @@ router.get('/:id', async (req, res) => {
 // Actualizar producto
 router.put('/:id', upload.array('images', 5), async (req, res) => {
   try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
+
     const updatedData = { ...req.body };
     
+    // Si se suben nuevas imágenes
     if (req.files && req.files.length > 0) {
-      const imageObjects = req.files.map(file => ({
-        data: file.buffer || fs.readFileSync(file.path),
-        contentType: file.mimetype
-      }));
-      updatedData.images = imageObjects;
+      // Eliminar imágenes antiguas de GCS
+      if (product.images && product.images.length > 0) {
+        for (const imageUrl of product.images) {
+          try {
+            // Extraer el nombre del archivo de la URL
+            const fileName = imageUrl.split('/').pop();
+            const fullPath = `products/${product._id}/${fileName}`;
+            await deleteFileFromGCS(fullPath);
+          } catch (deleteError) {
+            console.error('Error deleting old image:', deleteError);
+          }
+        }
+      }
+
+      // Subir nuevas imágenes
+      const imageUrls = [];
+      for (let i = 0; i < req.files.length; i++) {
+        const file = req.files[i];
+        const fileName = generateFileName(file.originalname, product._id, i);
+        
+        try {
+          const imageUrl = await uploadFileToGCS(file, fileName);
+          imageUrls.push(imageUrl);
+        } catch (uploadError) {
+          console.error('Error uploading new image:', uploadError);
+        }
+      }
+      
+      updatedData.images = imageUrls;
     }
 
-    const product = await Product.findByIdAndUpdate(req.params.id, updatedData, { new: true });
-    if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
-    res.json(product);
+    const updatedProduct = await Product.findByIdAndUpdate(
+      req.params.id, 
+      updatedData, 
+      { new: true }
+    );
+    
+    res.json(updatedProduct);
   } catch (error) {
+    console.error('Error updating product:', error);
     res.status(400).json({ error: error.message });
   }
 });
@@ -75,26 +139,32 @@ router.put('/:id', upload.array('images', 5), async (req, res) => {
 // Eliminar producto
 router.delete('/:id', async (req, res) => {
   try {
-    const product = await Product.findByIdAndDelete(req.params.id);
+    const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
+
+    // Eliminar imágenes de GCS antes de eliminar el producto
+    if (product.images && product.images.length > 0) {
+      for (const imageUrl of product.images) {
+        try {
+          // Extraer el nombre del archivo de la URL
+          const fileName = imageUrl.split('/').pop();
+          const fullPath = `products/${product._id}/${fileName}`;
+          await deleteFileFromGCS(fullPath);
+        } catch (deleteError) {
+          console.error('Error deleting image:', deleteError);
+        }
+      }
+    }
+
+    await Product.findByIdAndDelete(req.params.id);
     res.json({ message: 'Producto eliminado con éxito' });
   } catch (error) {
+    console.error('Error deleting product:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/image/:id/:index', async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-    if (!product || !product.images || !product.images[req.params.index]) {
-      return res.status(404).send('Imagen no encontrada');
-    }
-    
-    const image = product.images[req.params.index];
-    res.set('Content-Type', image.contentType);
-    res.send(image.data);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+// Ya no necesitamos esta ruta porque las imágenes son públicas en GCS
+// router.get('/image/:id/:index', ...)
+
 module.exports = router;
