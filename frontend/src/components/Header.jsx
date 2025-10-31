@@ -7,12 +7,16 @@ export default function Header() {
     const [isScrolled, setIsScrolled] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [userRole, setUserRole] = useState(null);
     const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
     useEffect(() => {
-        // Check if user is authenticated on component mount
         const token = localStorage.getItem('userToken');
+        const role = localStorage.getItem('userRole');
+
         setIsAuthenticated(!!token);
+        if (role) setUserRole(role);
+
 
         const handleScroll = () => {
             setIsScrolled(window.scrollY > 20);
@@ -33,7 +37,7 @@ export default function Header() {
     const handleLogout = () => {
         
         localStorage.removeItem('userToken');
-        
+        localStorage.removeItem('userRole');
         setIsAuthenticated(false);
        
         window.location.href = '/login';
@@ -113,7 +117,6 @@ export default function Header() {
 
                     <div className="flex items-center gap-4">
                         {isAuthenticated ? (
-                            // Show profile dropdown when authenticated
                             <div className="relative">
                                 <button
                                     onClick={toggleProfileMenu}
@@ -132,18 +135,20 @@ export default function Header() {
                                     <div className="absolute right-0 mt-2 w-48 bg-white/80 backdrop-blur-lg rounded-md shadow-lg py-1 border border-white/30 z-50">
                                         <a
                                             href="/checkout"
-                                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-white/50 transition-colors"
+                                            className="flex items-center px-4 py-2 text-sm text-gray-400 hover:bg-white/50 transition-colors"
                                         >
                                             <span className="mr-2"><User size={16} /></span>
                                             Mi Carrito
                                         </a>
-                                        <a
-                                            href="/dashboard"
-                                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-white/50 transition-colors"
-                                        >
-                                            <span className="mr-2"><Settings size={16} /></span>
-                                            Dashboard
-                                        </a>
+                                        {userRole === 'admin' && (
+                                            <a
+                                                href="/dashboard"
+                                                className="flex items-center px-4 py-2 text-sm text-gray-400 hover:bg-white/50 transition-colors"
+                                            >
+                                                <span className="mr-2"><Settings size={16} /></span>
+                                                Dashboard
+                                            </a>
+                                        )}
                                         <div className="border-t border-gray-200"></div>
                                         <button
                                             onClick={handleLogout}
@@ -156,11 +161,10 @@ export default function Header() {
                                 )}
                             </div>
                         ) : (
-                            // Show login/register buttons when not authenticated
                             <div className="sm:flex hidden sm:gap-4">
                                 <a
                                             href="/Checkout"
-                                            className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-white/50 transition-colors bg-white/70 rounded-md"
+                                            className="flex items-center px-4 py-2 text-sm text-gray-400 hover:bg-white/50 transition-colors bg-white/70 rounded-md"
                                         >
                                             <span className="mr-2"><User size={16} /></span>
                                             Mi Carrito
@@ -237,20 +241,21 @@ export default function Header() {
                                     </a>
                                     
                                     {isAuthenticated ? (
-                                        // Show profile options in mobile menu when authenticated
                                         <div className="mt-5 space-y-3">
                                             <a
-                                                className="rounded-lg hover:bg-white/40 text-sm font-medium text-gray-200 px-4 py-2 transition-all duration-600 ease-in-out"
+                                                className="rounded-lg hover:bg-white/40 text-sm font-medium text-gray-400 px-4 py-2 transition-all duration-600 ease-in-out"
                                                 href="/checkout"
                                             >
                                                 Mi carrito
                                             </a>
-                                            <a
-                                                className="rounded-lg hover:bg-white/40 text-sm font-medium text-gray-200 px-4 py-2 transition-all duration-600 ease-in-out"
-                                                href="/dashboard"
-                                            >
-                                                Dashboard
-                                            </a>
+                                            {userRole === 'admin' && (
+                                                <a
+                                                    className="rounded-lg hover:bg-white/40 text-sm font-medium text-gray-400 px-4 py-2 transition-all duration-600 ease-in-out"
+                                                    href="/dashboard"
+                                                >
+                                                    Dashboard
+                                                </a>
+                                            )}
                                             <button
                                                 onClick={handleLogout}
                                                 className="w-full rounded-lg hover:bg-white/40 text-sm font-medium text-red-400 px-4 py-2 transition-all duration-600 ease-in-out"
@@ -259,7 +264,6 @@ export default function Header() {
                                             </button>
                                         </div>
                                     ) : (
-                                        // Show login/register buttons in mobile menu when not authenticated
                                         <div className="mt-5 space-y-3">
                                             <a
                                                 className="min-sm:hidden mr-1 rounded-md bg-gradient-to-r from-teal-500 to-teal-600 px-5 py-2.5 text-center text-sm font-medium text-white shadow hover:from-teal-600 hover:to-teal-700 transition-all duration-600 ease-in-out"

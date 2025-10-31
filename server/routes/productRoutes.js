@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const Product = require('../models/Product');
 const { uploadFileToGCS, deleteFileFromGCS, generateFileName } = require('../config/storage');
+const { protect, isAdmin } = require('../middleware/authMiddleware');
 
 // Configuración de multer para manejar archivos en memoria
 const storage = multer.memoryStorage();
@@ -22,7 +23,7 @@ const upload = multer({
 });
 
 // Crear producto
-router.post('/', upload.array('images', 5), async (req, res) => {
+router.post('/', protect, isAdmin, upload.array('images', 5), async (req, res) => {
   try {
     // Crear el producto primero para obtener el ID
     const product = new Product({ 
@@ -83,7 +84,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Actualizar producto
-router.put('/:id', upload.array('images', 5), async (req, res) => {
+router.put('/:id', protect, isAdmin, upload.array('images', 5), async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
@@ -137,7 +138,8 @@ router.put('/:id', upload.array('images', 5), async (req, res) => {
 });
 
 // Eliminar producto
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', protect, isAdmin, async (req, res) => {
+
   try {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
@@ -163,8 +165,5 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
-// Ya no necesitamos esta ruta porque las imágenes son públicas en GCS
-// router.get('/image/:id/:index', ...)
 
 module.exports = router;

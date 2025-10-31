@@ -38,15 +38,14 @@ function App() {
 
       
     <Route element={<DashboardLayout/>}>
-      
-      <Route path="/Dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute> } />
-      <Route path="/NewProduct" element={<ProtectedRoute><NewProduct /></ProtectedRoute>} />
-      <Route path="/Listaproductos" element={<ProtectedRoute><Listaproductos /></ProtectedRoute>} />
-      <Route path="/Modproducto/:id" element={<ProtectedRoute><Modproducto /></ProtectedRoute>} />
-      <Route path="/Modproducto" element={<ProtectedRoute><Modproducto /></ProtectedRoute>} />
-      <Route path="/Listaordenes" element={<ProtectedRoute><Listaordenes /></ProtectedRoute>} />
-      <Route path="/Detallesorden" element={<ProtectedRoute><Detallesorden /></ProtectedRoute>} />
-      <Route path="/Detallesorden/:id" element={<ProtectedRoute><Detallesorden /></ProtectedRoute>} />
+      <Route path="/Dashboard" element={<ProtectedRoute requiredRole="admin"><Dashboard /></ProtectedRoute>} />
+      <Route path="/NewProduct" element={<ProtectedRoute requiredRole="admin"><NewProduct /></ProtectedRoute>} />
+      <Route path="/Listaproductos" element={<ProtectedRoute requiredRole="admin"><Listaproductos /></ProtectedRoute>} />
+      <Route path="/Modproducto/:id" element={<ProtectedRoute requiredRole="admin"><Modproducto /></ProtectedRoute>} />
+      <Route path="/Modproducto" element={<ProtectedRoute requiredRole="admin"><Modproducto /></ProtectedRoute>} />
+      <Route path="/Listaordenes" element={<ProtectedRoute requiredRole="admin"><Listaordenes /></ProtectedRoute>} />
+      <Route path="/Detallesorden" element={<ProtectedRoute requiredRole="admin"><Detallesorden /></ProtectedRoute>} />
+      <Route path="/Detallesorden/:id" element={<ProtectedRoute requiredRole="admin"><Detallesorden /></ProtectedRoute>} />
     </Route>
 
     <Route element={<AuthLayout/>}>

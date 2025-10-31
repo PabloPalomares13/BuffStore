@@ -10,6 +10,19 @@ const link = import.meta.env.PROD
   : 'http://localhost:3000'
 
 const Login = () => {
+
+  useEffect(() => {
+  const token = localStorage.getItem('userToken');
+  const role = localStorage.getItem('userRole');
+  if (token) {
+    if (role === 'admin') {
+      navigate('/dashboard');
+    } else {
+      navigate('/home');
+    }
+  }
+  }, []);
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -62,24 +75,49 @@ const Login = () => {
   }, [formData]);
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!isFormValid) return;
-    
-    try {
-      const response = await axios.post(`${link}/api/auth/login`, {
-        email: formData.email,
-        password: formData.password
-      });
-      console.log('Login successful:', response.data);
-      localStorage.setItem('userToken', response.data.token);
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Login failed:', error.response?.data || error.message);
-      setAlert({ show: true, type: 'error', message: `Email o contraseña incorrectos${error.message}` });
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-    }
-  };
+  e.preventDefault();
+
+  if (!isFormValid) return;
+
+  try {
+    const response = await axios.post(`${link}/api/auth/login`, {
+      email: formData.email,
+      password: formData.password
+    });
+
+    // Guardar token y rol
+    localStorage.setItem('userToken', response.data.token);
+    localStorage.setItem('userRole', response.data.role);
+
+    // Mostrar alerta de éxito
+    setAlert({
+      show: true,
+      type: 'success',
+      message: 'Inicio de sesión exitoso 🎉 Redirigiendo...'
+    });
+
+    // Redirigir según el rol después de un pequeño delay
+    setTimeout(() => {
+      if (response.data.role === 'admin') {
+        navigate('/dashboard');
+      } else {
+        navigate('/home');
+      }
+    }, 1500);
+
+  } catch (error) {
+    console.error('Error al iniciar sesión:', error);
+
+    setAlert({
+      show: true,
+      type: 'error',
+      message: 'Correo o contraseña incorrectos ❌'
+    });
+
+    // Ocultar alerta después de 3 segundos
+    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 1500);
+  }
+};
 
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-blue-600 to-purple-500">
@@ -101,7 +139,30 @@ const Login = () => {
           <p className="text-gray-500 text-center mb-8">
             Un placer tenerte de vuelta 
           </p>
-          
+          {alert.show && (
+            <div
+              className={`fixed top-6 right-6 z-50 px-5 py-4 rounded-xl shadow-lg text-white font-medium transition-all duration-500 transform ${
+                alert.show ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
+              } ${
+                alert.type === 'success'
+                  ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                  : 'bg-gradient-to-r from-red-500 to-rose-600'
+              }`}
+            >
+              <p className="flex items-center gap-2">
+                {alert.type === 'success' ? (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+                {alert.message}
+              </p>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-400 mb-1">Correo Electronico</label>

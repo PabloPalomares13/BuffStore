@@ -34,8 +34,7 @@ const ProductDetail = () => {
   // Función para obtener datos adicionales de la API externa (por ejemplo, RAWG)
   const fetchApiData = async (gameName) => {
     try {
-      // Aquí usarías tu API key y endpoint
-      // Ejemplo con RAWG API (reemplaza con tu API)
+
       const apiKey = import.meta.env.VITE_API_GAMES_INFO; 
       const response = await fetch(
         `https://api.rawg.io/api/games?key=${apiKey}&search=${encodeURIComponent(gameName)}&page_size=1`

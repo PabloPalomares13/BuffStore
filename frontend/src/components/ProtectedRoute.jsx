@@ -1,41 +1,49 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
-// This component protects routes that require authentication
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, requiredRole }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRole, setUserRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is authenticated
     const token = localStorage.getItem('userToken');
-    
+
+    const savedRole = localStorage.getItem('userRole');
+    if (savedRole) setUserRole(savedRole);
+
     if (token) {
-      // If you want to validate the token with the server
-      const validateToken = async () => {
+      const fetchProfile = async () => {
         try {
-          const response = await fetch('/api/auth/profile', {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
+          const backendURL = import.meta.env.PROD 
+            ? import.meta.env.VITE_BACKEND_URL
+            : 'http://localhost:3000';
+
+          const response = await fetch(`${backendURL}/api/auth/profile`, {
+            headers: { 'Authorization': `Bearer ${token}` }
           });
-          
+
           if (response.ok) {
+            const data = await response.json();
             setIsAuthenticated(true);
+            setUserRole(data.role);
+            localStorage.setItem('userRole', data.role);
           } else {
-            // Token is invalid or expired
-            localStorage.removeItem('userToken');
+            console.warn('Token inválido o expirado.');
             setIsAuthenticated(false);
+            localStorage.removeItem('userToken');
+            localStorage.removeItem('userRole');
           }
         } catch (error) {
           console.error('Error validating token:', error);
+
           setIsAuthenticated(false);
         } finally {
           setIsLoading(false);
         }
       };
-      
-      validateToken();
+
+      fetchProfile();
     } else {
       setIsAuthenticated(false);
       setIsLoading(false);
@@ -43,7 +51,6 @@ const ProtectedRoute = ({ children }) => {
   }, []);
 
   if (isLoading) {
-    // Show loading spinner or placeholder while checking authentication
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500"></div>
@@ -51,12 +58,17 @@ const ProtectedRoute = ({ children }) => {
     );
   }
 
-  // If not authenticated, redirect to login page
+  // Si no está autenticado, redirigir al login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // If authenticated, render the protected component
+  // Si tiene rol requerido y no coincide
+  if (requiredRole && userRole !== requiredRole) {
+    return <Navigate to="/" replace />; // redirigir al home
+  }
+
+  // Si todo está bien, renderiza el contenido
   return children;
 };
 

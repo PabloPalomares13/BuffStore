@@ -14,7 +14,6 @@ const protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       
       // Obtener el usuario desde la base de datos
-      // req.user = await userOperations.findById(decoded.id, '-password');
       req.user = await User.findById(decoded.id).select('-password');
       
       next();
@@ -28,5 +27,12 @@ const protect = async (req, res, next) => {
     res.status(401).json({ message: 'No autorizado, no hay token' });
   }
 };
+const isAdmin = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    next();
+  } else {
+    res.status(403).json({ message: 'Acceso denegado: solo para administradores' });
+  }
+};
 
-module.exports = { protect };
+module.exports = { protect, isAdmin };

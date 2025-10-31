@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
     backgroundColor: '#F9FAFB',
   },
-  tableColCode: { width: '10%', textAlign: 'left', paddingLeft: 8 },
+  tableColCode: { width: '10%', textAlign: 'center', paddingLeft: 8 },
   tableColName: { width: '25%', textAlign: 'left', paddingLeft: 8 },
   tableColCategory: { width: '15%', textAlign: 'left', paddingLeft: 8 },
   tableColStock: { width: '10%', textAlign: 'left', paddingLeft: 8 },

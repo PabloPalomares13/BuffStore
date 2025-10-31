@@ -139,9 +139,8 @@ const Modproducto = () => {
   const handleImageChange = (e) => {
   if (e.target.files && e.target.files[0]) {
     const file = e.target.files[0];
-    setSelectedImage(URL.createObjectURL(file)); // Preview local
+    setSelectedImage(URL.createObjectURL(file));
     
-    // Store the file for upload
     setProductData(prev => ({
       ...prev,
       newImage: file
@@ -153,7 +152,7 @@ const Modproducto = () => {
   
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    const token = localStorage.getItem('userToken');
     try {
       const formData = new FormData();
       
@@ -171,6 +170,9 @@ const Modproducto = () => {
       
       const response = await fetch(`${link}/api/products/${id}`, {
         method: 'PUT',
+        headers: {
+        'Authorization': `Bearer ${token}` // ✅ Enviamos el token aquí
+        },
         body: formData,
       });
       

@@ -28,6 +28,7 @@ const NewProduct = () => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   
+  
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
@@ -77,37 +78,54 @@ const NewProduct = () => {
   };
 
   const handleSubmit = async () => {
-    const formData = new FormData();
-    for (const key in productData) {
-      formData.append(key, productData[key]);
-    }
-    if (imageFile) {
-      formData.append('images', imageFile);
+  const formData = new FormData();
+  for (const key in productData) {
+    formData.append(key, productData[key]);
+  }
+  if (imageFile) {
+    formData.append('images', imageFile);
+  }
+
+  const token = localStorage.getItem('userToken'); // ✅ Obtenemos el token
+
+  try {
+    const res = await fetch(`${link}/api/products`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}` // ✅ Enviamos el token aquí
+      },
+      body: formData
+    });
+
+    if (!res.ok) {
+      if (res.status === 401) {
+        throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
+      }
+      if (res.status === 403) {
+        throw new Error('Acceso denegado: solo administradores pueden crear productos.');
+      }
+      throw new Error('Error al guardar el producto.');
     }
 
-    try {
-      const res = await fetch(`${link}/api/products`, {
-        method: 'POST',
-        body: formData
-      });
+    setAlert({ show: true, type: 'success', message: '✅ Producto guardado exitosamente' });
 
-      if (!res.ok) throw new Error('Error al guardar el producto');
 
-      const result = await res.json();
-      setAlert({ show: true, type: 'success', message: 'Producto guardado exitosamente' });
-      setProductData({
-        name: '', code: '', description: '', price: '', stock: '', taxRate: '',
-        category: '', tags: '', brand: '', vendor: ''
-      });
-      setImageFile(null);
-      setSelectedImage(null);
-    } catch (error) {
-      setAlert({ show: true, type: 'error', message: `Error al guardar el producto: ${error.message}` });
-    } finally {
-      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
-    }
-  };
-  
+    setProductData({
+      name: '', code: '', description: '', price: '', stock: '', taxRate: '',
+      category: '', tags: '', brand: '', vendor: ''
+    });
+    setImageFile(null);
+    setSelectedImage(null);
+  } catch (error) {
+    setAlert({
+      show: true,
+      type: 'error',
+      message: `⚠️ ${error.message}`
+    });
+  } finally {
+    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 2000);
+  }
+};
   
   return (
     <main className="flex-1 overflow-y-auto p-6 bg-transparent relative">

@@ -125,7 +125,7 @@ const Register = () => {
                     className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white/70 appearance-none"
                     >
                     <option value="">Seleccionar...</option>
-                    <option value="Targeta de Identidad">Tarjeta de Identidad</option>
+                    <option value="Tarjeta de Identidad">Tarjeta de Identidad</option>
                     <option value="Cedula de ciudadania">Cedula de ciudadania</option>
                     <option value="Cedula de extranjeria">Cedula de extranjeria</option>
                     </select>
