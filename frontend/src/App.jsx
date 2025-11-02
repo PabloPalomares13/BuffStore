@@ -13,6 +13,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Checkout from './pages/Checkout';
 import ChatBot from './pages/ChatBot';
+import UserProfile from './pages/UserProfile';
 
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
@@ -33,19 +34,19 @@ function App() {
       <Route path="/home" element={<Home />} />
       <Route path="/checkout" element={<Checkout />} />
       <Route path="/product/:id" element={<ProductDetail />} />
-
+      <Route path="/UserProfile" element={<ProtectedRoute requiredRoles={["user", "admin"]}><UserProfile /></ProtectedRoute>} />
     </Route>
 
       
     <Route element={<DashboardLayout/>}>
-      <Route path="/Dashboard" element={<ProtectedRoute requiredRole="admin"><Dashboard /></ProtectedRoute>} />
-      <Route path="/NewProduct" element={<ProtectedRoute requiredRole="admin"><NewProduct /></ProtectedRoute>} />
-      <Route path="/Listaproductos" element={<ProtectedRoute requiredRole="admin"><Listaproductos /></ProtectedRoute>} />
-      <Route path="/Modproducto/:id" element={<ProtectedRoute requiredRole="admin"><Modproducto /></ProtectedRoute>} />
-      <Route path="/Modproducto" element={<ProtectedRoute requiredRole="admin"><Modproducto /></ProtectedRoute>} />
-      <Route path="/Listaordenes" element={<ProtectedRoute requiredRole="admin"><Listaordenes /></ProtectedRoute>} />
-      <Route path="/Detallesorden" element={<ProtectedRoute requiredRole="admin"><Detallesorden /></ProtectedRoute>} />
-      <Route path="/Detallesorden/:id" element={<ProtectedRoute requiredRole="admin"><Detallesorden /></ProtectedRoute>} />
+      <Route path="/Dashboard" element={<ProtectedRoute requiredRoles={["admin"]}><Dashboard /></ProtectedRoute>} />
+      <Route path="/NewProduct" element={<ProtectedRoute requiredRoles={["admin"]}><NewProduct /></ProtectedRoute>} />
+      <Route path="/Listaproductos" element={<ProtectedRoute requiredRoles={["admin"]}><Listaproductos /></ProtectedRoute>} />
+      <Route path="/Modproducto/:id" element={<ProtectedRoute requiredRoles={["admin"]}><Modproducto /></ProtectedRoute>} />
+      <Route path="/Modproducto" element={<ProtectedRoute requiredRoles={["admin"]}><Modproducto /></ProtectedRoute>} />
+      <Route path="/Listaordenes" element={<ProtectedRoute requiredRoles={["admin"]}><Listaordenes /></ProtectedRoute>} />
+      <Route path="/Detallesorden" element={<ProtectedRoute requiredRoles={["admin"]}><Detallesorden /></ProtectedRoute>} />
+      <Route path="/Detallesorden/:id" element={<ProtectedRoute requiredRoles={["admin"]}><Detallesorden /></ProtectedRoute>} />
     </Route>
 
     <Route element={<AuthLayout/>}>

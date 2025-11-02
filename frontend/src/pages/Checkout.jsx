@@ -13,7 +13,7 @@ const Checkout = () => {
   const [taxes, setTaxes] = useState(0);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-
+  const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   // Estados para formulario
   const [formData, setFormData] = useState({
     // Datos personales
@@ -218,19 +218,29 @@ const Checkout = () => {
           total
         }
       };
-      const response = await axios.post(`${link}/api/orders`, orderData);
+      //const response = await axios.post(`${link}/api/orders`, orderData);
+      const token = localStorage.getItem('userToken'); // ✅ Obtiene el token guardado al hacer login
+
+      const response = await axios.post(`${link}/api/orders`, orderData, {
+        headers: {
+          'Authorization': `Bearer ${token}`, // ✅ Agregamos el token
+          'Content-Type': 'application/json'
+        }
+      });
 
       if (response.status === 201) {
-        console.log('Orden creada exitosamente');
-
-        // Limpiar carrito después de procesar el pago
+        const codes = response.data.codes;
+        setAlert({
+        show: true,
+        type: 'success',
+        message: `✅ Compra completada. Tus códigos: ${codes.map(c => `${c.product}: ${c.code}`).join(', ')}`
+        });
         localStorage.removeItem('cart');
 
-        // Mostrar mensaje de éxito
-        alert('¡Pago procesado con éxito!');
+        setTimeout(() => {
+        window.location.href = '/Userprofile';
+      }, 5000);
 
-        // Redireccionar a página de confirmación
-        window.location.href = '/';
       } else {
         throw new Error('Error al crear la orden');
       }
@@ -242,6 +252,15 @@ const Checkout = () => {
       setLoading(false);
     }
   };
+  {alert.show && (
+  <div
+    className={`fixed bottom-6 right-6 px-5 py-3 rounded-lg shadow-lg text-white transition-all duration-300 ${
+      alert.type === 'success' ? 'bg-green-600' : 'bg-red-500'
+    }`}
+  >
+    {alert.message}
+  </div>
+  )}
   return (
     <div className="min-h-screen bg-gray-50 py-12 pt-28">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

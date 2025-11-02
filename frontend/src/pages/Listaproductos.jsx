@@ -305,9 +305,13 @@ const Listaproductos = () => {
     });
 
     if (confirm.isConfirmed) {
+      const token = localStorage.getItem('userToken');
       try {
         const response = await fetch(`${link}/api/products/${id}`, {
           method: 'DELETE',
+          headers: {
+        'Authorization': `Bearer ${token}` // ✅ Enviamos el token aquí
+        },
         });
         if (!response.ok) {
           throw new Error('Error al eliminar el producto');

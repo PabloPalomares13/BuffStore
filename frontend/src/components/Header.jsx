@@ -140,6 +140,13 @@ export default function Header() {
                                             <span className="mr-2"><User size={16} /></span>
                                             Mi Carrito
                                         </a>
+                                        <a
+                                            href="/userprofile"
+                                            className="flex items-center px-4 py-2 text-sm text-gray-400 hover:bg-white/50 transition-colors"
+                                        >
+                                            <span className="mr-2"><User size={16} /></span>
+                                            Mi perfil
+                                        </a>
                                         {userRole === 'admin' && (
                                             <a
                                                 href="/dashboard"

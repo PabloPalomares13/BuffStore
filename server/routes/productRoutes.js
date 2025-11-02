@@ -26,35 +26,50 @@ const upload = multer({
 router.post('/', protect, isAdmin, upload.array('images', 5), async (req, res) => {
   try {
     // Crear el producto primero para obtener el ID
-    const product = new Product({ 
+    const product = new Product({
       ...req.body,
       images: [] // Inicialmente vacío
     });
-    
+
     const savedProduct = await product.save();
 
-    // Si hay archivos, subirlos a GCS
+    const GameCode = require('../models/GameCode');
+    const crypto = require('crypto');
+
+    const generateCodesForProduct = async (productId, stock) => {
+      const codes = [];
+      for (let i = 0; i < stock; i++) {
+        const code = crypto.randomBytes(6).toString('hex').toUpperCase();
+        codes.push({ product: productId, code });
+      }
+      await GameCode.insertMany(codes);
+      console.log(`${codes.length} códigos generados para el producto ${productId}`);
+    };
+
+    if (savedProduct.stock > 0) {
+      await generateCodesForProduct(savedProduct._id, savedProduct.stock);
+    }
+
     if (req.files && req.files.length > 0) {
       const imageUrls = [];
-      
+
       for (let i = 0; i < req.files.length; i++) {
         const file = req.files[i];
         const fileName = generateFileName(file.originalname, savedProduct._id, i);
-        
+
         try {
           const imageUrl = await uploadFileToGCS(file, fileName);
           imageUrls.push(imageUrl);
         } catch (uploadError) {
           console.error('Error uploading image:', uploadError);
-          // Si falla la subida de imagen, continuamos con las demás
         }
       }
-      
-      // Actualizar el producto con las URLs de las imágenes
+
+      // Actualizar el producto con las URLs
       savedProduct.images = imageUrls;
       await savedProduct.save();
     }
-    
+
     res.status(201).json(savedProduct);
   } catch (error) {
     console.error('Error creating product:', error);

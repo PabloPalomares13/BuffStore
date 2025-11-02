@@ -1,42 +1,41 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
-const ProtectedRoute = ({ children, requiredRole }) => {
+const ProtectedRoute = ({ children, requiredRoles = [] }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('userToken');
+    const token = localStorage.getItem("userToken");
+    const savedRole = localStorage.getItem("userRole");
 
-    const savedRole = localStorage.getItem('userRole');
     if (savedRole) setUserRole(savedRole);
 
     if (token) {
       const fetchProfile = async () => {
         try {
-          const backendURL = import.meta.env.PROD 
+          const backendURL = import.meta.env.PROD
             ? import.meta.env.VITE_BACKEND_URL
-            : 'http://localhost:3000';
+            : "http://localhost:3000";
 
           const response = await fetch(`${backendURL}/api/auth/profile`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
           });
 
           if (response.ok) {
             const data = await response.json();
             setIsAuthenticated(true);
             setUserRole(data.role);
-            localStorage.setItem('userRole', data.role);
+            localStorage.setItem("userRole", data.role);
           } else {
-            console.warn('Token inválido o expirado.');
+            console.warn("Token inválido o expirado.");
             setIsAuthenticated(false);
-            localStorage.removeItem('userToken');
-            localStorage.removeItem('userRole');
+            localStorage.removeItem("userToken");
+            localStorage.removeItem("userRole");
           }
         } catch (error) {
-          console.error('Error validating token:', error);
-
+          console.error("Error validating token:", error);
           setIsAuthenticated(false);
         } finally {
           setIsLoading(false);
@@ -58,17 +57,15 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     );
   }
 
-  // Si no está autenticado, redirigir al login
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  // Si tiene rol requerido y no coincide
-  if (requiredRole && userRole !== requiredRole) {
-    return <Navigate to="/" replace />; // redirigir al home
+  // 🧠 Aquí es donde se permite más de un rol
+  if (requiredRoles.length > 0 && !requiredRoles.includes(userRole)) {
+    return <Navigate to="/" replace />;
   }
 
-  // Si todo está bien, renderiza el contenido
   return children;
 };
 

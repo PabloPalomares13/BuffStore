@@ -5,6 +5,7 @@ const productRoutes = require('./routes/productRoutes');
 const authRoutes = require('./routes/authRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const geminiRoutes = require('./routes/geminiRoutes');
+const gameCodeRoutes = require("./routes/gameCodesRoutes");
 const path = require('path');
 const cors = require('cors');
 
@@ -54,6 +55,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/gemini', geminiRoutes);
+app.use("/api/codes", gameCodeRoutes);
 
 // Conectar a MongoDB
 mongoose.connect(process.env.MONGO_URI)
