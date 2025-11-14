@@ -6,6 +6,7 @@ const authRoutes = require('./routes/authRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const geminiRoutes = require('./routes/geminiRoutes');
 const gameCodeRoutes = require("./routes/gameCodesRoutes");
+const videoRoutes = require('./routes/videoRoutes');
 const path = require('path');
 const cors = require('cors');
 
@@ -56,6 +57,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/gemini', geminiRoutes);
 app.use("/api/codes", gameCodeRoutes);
+app.use('/api/videos', videoRoutes);
 
 // Conectar a MongoDB
 mongoose.connect(process.env.MONGO_URI)
@@ -63,6 +65,13 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.error('MongoDB connection error:', err));
 
 const PORT = process.env.PORT || 3000;
+
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    message: 'Backend funcionando',
+    callbackUrl: `${process.env.API_BASE_URL_TEMP}/api/videos/callback`
+  });
+});
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`GCS Bucket: ${process.env.GCS_BUCKET_NAME}`);

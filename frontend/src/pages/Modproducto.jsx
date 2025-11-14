@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  X,  Image as ImageIcon, ChevronDown, Bold, Italic, Underline, Link, ListOrdered, ListTree, AlignLeft,
-  CheckCircle, AlertCircle
+  X,Upload,  Image as ImageIcon, ChevronDown,Video, Bold, Italic, Underline, Link, ListOrdered, ListTree, AlignLeft,Loader2, Trash2
 } from 'lucide-react';
 import Swal from 'sweetalert2';
 
@@ -29,80 +28,67 @@ const Modproducto = () => {
   });
   
   const [selectedImage, setSelectedImage] = useState(null);
-  const [loading, setLoading] = useState(true);
+  //const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentImages, setCurrentImages] = useState([]);
   
+  const [existingMedia, setExistingMedia] = useState([]);
+  const [newImageFiles, setNewImageFiles] = useState([]);
+  const [newVideoFiles, setNewVideoFiles] = useState([]);
+  const [newImagePreviews, setNewImagePreviews] = useState([]);
+  const [newVideoPreviews, setNewVideoPreviews] = useState([]);
+  const [mediaToDelete, setMediaToDelete] = useState([]);
+  const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [previewMedia, setPreviewMedia] = useState(null);
   
   useEffect(() => {
     if (id) {
-      fetchProductDetails();
+      fetchProductData();
     } else {
       setLoading(false);
     }
   }, [id]);
   
-  const fetchProductDetails = async () => {
-  try {
-    const response = await fetch(`${link}/api/products/${id}`);
-    if (!response.ok) {
-      throw new Error('Error al obtener los detalles del producto');
+  const fetchProductData = async () => {
+    try {
+      const token = localStorage.getItem('userToken');
+      const response = await fetch(`${link}/api/products/${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Error al cargar el producto');
+
+      const data = await response.json();
+      setProductData({
+        name: data.name || '',
+        code: data.code || '',
+        description: data.description || '',
+        price: data.price || '',
+        stock: data.stock || '',
+        taxRate: data.taxRate || '',
+        category: data.category || '',
+        tags: data.tags || '',
+        brand: data.brand || '',
+        vendor: data.vendor || '',
+      });
+      setExistingMedia(data.media || []);
+    } catch (error) {
+      setAlert({ show: true, type: 'error', message: error.message });
+    } finally {
+      setLoading(false);
     }
-    const data = await response.json();
-    
-    console.log('Product data:', data); // Debug
-    console.log('Product images:', data.images); // Debug
-    
-    // Initialize form with product data
-    setProductData({
-      name: data.name || '',
-      code: data.code || '',
-      description: data.description || '',
-      price: data.price || '',
-      stock: data.stock || '',
-      taxRate: data.taxRate || '',
-      category: data.category || '',
-      tags: data.tags || '',
-      brand: data.brand || '',
-      vendor: data.vendor || ''
-    });
-    
-    if (data.images && data.images.length > 0) {
-      // Verificar si las imágenes son URLs de GCS o formato binario
-      if (typeof data.images[0] === 'string') {
-        // Nuevo formato: URLs directas de Google Cloud Storage
-        setCurrentImages(data.images);
-        setSelectedImage(data.images[0]); // Mostrar la primera imagen
-        console.log('Using GCS URL:', data.images[0]);
-      } else if (data.images[0].data) {
-        // Formato antiguo: imágenes binarias en MongoDB
-        setCurrentImages(data.images);
-        const imageUrl = `${link}/api/products/image/${data._id}/0`;
-        setSelectedImage(imageUrl);
-        console.log('Using binary format URL:', imageUrl);
-      }
-    } else {
-      console.log('Imagen no encontrada');
-      setCurrentImages([]);
-      setSelectedImage(null);
-    }
-    
-    setLoading(false);
-  } catch (err) {
-    console.error('Error fetching product:', err);
-    setError(err.message);
-    setLoading(false);
-  }
-};
+  };
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
     if (name === "price") {
       const rawValue = value.replace(/\D/g, "");
-      const formattedValue = rawValue.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
       setProductData({ ...productData, [name]: rawValue });
-      e.target.value = formattedValue;
       return;
     }
 
@@ -124,80 +110,139 @@ const Modproducto = () => {
 
     if (name === "stock" || name === "code") {
       const onlyNumbers = value.replace(/\D/g, "");
-      if (value !== onlyNumbers) {
-        setAlert({ show: true, type: "error", message: `El campo ${name} solo puede contener números` });
-        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 4000);
-        return;
-      }
-      setProductData({ ...productData, [name]: value });
+      setProductData({ ...productData, [name]: onlyNumbers });
       return;
     }
 
     setProductData({ ...productData, [name]: value });
   };
   
-  const handleImageChange = (e) => {
-  if (e.target.files && e.target.files[0]) {
-    const file = e.target.files[0];
-    setSelectedImage(URL.createObjectURL(file));
+  const handleNewImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    const totalImages = existingMedia.filter(m => m.type === 'image').length + newImageFiles.length + files.length;
+
+    if (totalImages > 10) {
+      setAlert({ show: true, type: "error", message: "Máximo 10 imágenes permitidas" });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 4000);
+      return;
+    }
+
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith('image/')) return false;
+      if (file.size > 5 * 1024 * 1024) return false;
+      return true;
+    });
+
+    setNewImageFiles(prev => [...prev, ...validFiles]);
     
-    setProductData(prev => ({
-      ...prev,
-      newImage: file
-    }));
-    
-    console.log('New image selected:', file.name);
-  }
-};
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewImagePreviews(prev => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
   
-  const handleSubmit = async (e) => {
+  const handleNewVideoChange = (e) => {
+    const files = Array.from(e.target.files);
+    const totalVideos = existingMedia.filter(m => m.type === 'video').length + newVideoFiles.length + files.length;
+
+    if (totalVideos > 2) {
+      setAlert({ show: true, type: "error", message: "Máximo 2 videos permitidos" });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 4000);
+      return;
+    }
+
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith('video/')) return false;
+      if (file.size > 100 * 1024 * 1024) return false;
+      return true;
+    });
+
+    setNewVideoFiles(prev => [...prev, ...validFiles]);
+    
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setNewVideoPreviews(prev => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+
+  const removeNewImage = (index) => {
+    setNewImageFiles(prev => prev.filter((_, i) => i !== index));
+    setNewImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewVideo = (index) => {
+    setNewVideoFiles(prev => prev.filter((_, i) => i !== index));
+    setNewVideoPreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const markExistingForDeletion = (e, mediaItem) => {
     e.preventDefault();
+    e.stopPropagation();
+    setMediaToDelete(prev => [...prev, mediaItem.fileName]);
+    setExistingMedia(prev => prev.filter(m => m.fileName !== mediaItem.fileName));
+  };
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    
+    const formData = new FormData();
+    for (const key in productData) {
+      formData.append(key, productData[key]);
+    }
+    
+    newImageFiles.forEach(file => {
+      formData.append('images', file);
+    });
+    
+    newVideoFiles.forEach(file => {
+      formData.append('videos', file);
+    });
+
+    if (mediaToDelete.length > 0) {
+      formData.append('deleteMedia', JSON.stringify(mediaToDelete));
+    }
+
     const token = localStorage.getItem('userToken');
+
     try {
-      const formData = new FormData();
-      
-
-      Object.keys(productData).forEach(key => {
-        if (key !== 'newImage') {
-          formData.append(key, productData[key]);
-        }
-      });
-      
-
-      if (productData.newImage) {
-        formData.append('images', productData.newImage);
-      }
-      
-      const response = await fetch(`${link}/api/products/${id}`, {
+      const res = await fetch(`${link}/api/products/${id}`, {
         method: 'PUT',
         headers: {
-        'Authorization': `Bearer ${token}` // ✅ Enviamos el token aquí
+          'Authorization': `Bearer ${token}`
         },
-        body: formData,
+        body: formData
       });
-      
-      if (!response.ok) {
-        throw new Error('Error al actualizar el producto');
-      }
-      
-      Swal.fire({
-        title: '¡Éxito!',
-        text: 'Producto actualizado correctamente',
-        icon: 'success',
-        confirmButtonText: 'Ok'
-      }).then(() => {
 
-        navigate('/listaproductos');
-      });
+      if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
+        }
+        if (res.status === 403) {
+          throw new Error('Acceso denegado: solo administradores pueden editar productos.');
+        }
+        throw new Error('Error al actualizar el producto.');
+      }
+
+      setAlert({ show: true, type: 'success', message: '✅ Producto actualizado exitosamente' });
       
-    } catch (err) {
-      console.error(err);
-      Swal.fire({
-        title: 'Error',
-        text: err.message,
-        icon: 'error',
-        confirmButtonText: 'Ok'
+      setTimeout(() => {
+        navigate('/listaproductos');
+      }, 2000);
+    } catch (error) {
+      setAlert({
+        show: true,
+        type: 'error',
+        message: `⚠️ ${error.message}`
       });
+    } finally {
+      setIsSubmitting(false);
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
     }
   };
   
@@ -436,8 +481,8 @@ const Modproducto = () => {
               </div>
             </div>
           </div>
-          
-          {/* Right Column - Product Image */}
+
+          {/* Right Column - Product Image 
           <div className="lg:col-span-1">
             <div className="bg-white/30 backdrop-blur-md rounded-xl shadow-lg border border-white/40 p-6 sticky top-6">
               <h2 className="text-lg font-semibold mb-2 text-gray-800">Imagen del Producto</h2>
@@ -495,6 +540,185 @@ const Modproducto = () => {
               </div>
             </div>
           </div>
+          */}
+          <div className="space-y-6">
+          {/* Medios Existentes */}
+          {existingMedia.length > 0 && (
+            <div className="border-2 border-gray-300 rounded-lg p-6">
+              <h3 className="text-lg font-semibold mb-4">Archivos Actuales</h3>
+              <div className="grid grid-cols-3 gap-4">
+                {existingMedia.map((media, index) => (
+                  <div key={index} className="relative group">
+                    <div onClick={() => setPreviewMedia({ type: media.type, url: media.url, thumbnail: media.thumbnail })} className="cursor-pointer">
+                      {media.type === 'image' ? (
+                        <img
+                          src={media.url}
+                          alt={`Existing ${index}`}
+                          className="w-full h-32 object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="relative">
+                          {media.thumbnail ? (
+                            <img src={media.thumbnail} alt="Video" className="w-full h-32 object-cover rounded-lg" />
+                          ) : media.url ? (
+                            <video src={media.url} className="w-full h-32 object-cover rounded-lg" />
+                          ) : (
+                            <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center">
+                              <Video className="w-8 h-8 text-gray-400" />
+                            </div>
+                          )}
+                          {media.processing && !media.thumbnail && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
+                              <Loader2 className="w-6 h-6 text-white animate-spin" />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <button
+                      type="button"
+                        onClick={(e) => markExistingForDeletion(e,media)}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div> 
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Nuevas Imágenes */}
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <ImageIcon className="w-5 h-5" />
+                Nuevas Imágenes ({newImageFiles.length})
+              </h3>
+              <label className="cursor-pointer bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+                <Upload className="w-4 h-4 inline mr-2" />
+                Agregar Imágenes
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={handleNewImageChange}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4">
+              {newImagePreviews.map((preview, index) => (
+                <div key={index} className="relative group">
+                  <img
+                    src={preview}
+                    alt={`New ${index}`}
+                    onClick={() => setPreviewMedia({ type: 'image', url: preview })} // ← NUEVO
+                    className="w-full h-32 object-cover rounded-lg cursor-pointer" // ← AGREGADO cursor-pointer
+                  />
+                  <button
+                    onClick={() => removeNewImage(index)}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Nuevos Videos */}
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Video className="w-5 h-5" />
+                Nuevos Videos ({newVideoFiles.length})
+              </h3>
+              <label className="cursor-pointer bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition">
+                <Upload className="w-4 h-4 inline mr-2" />
+                Agregar Videos
+                <input
+                  type="file"
+                  multiple
+                  accept="video/*"
+                  onChange={handleNewVideoChange}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            
+            <div className="space-y-4">
+              {newVideoPreviews.map((preview, index) => (
+                <div key={index} className="relative group">
+                  <video
+                    src={preview}
+                    onClick={() => setPreviewMedia({ type: 'video', url: preview })} // ← NUEVO
+                    className="w-full h-48 rounded-lg cursor-pointer" // ← AGREGADO cursor-pointer, QUITADO controls
+                  />
+                  <button
+                    onClick={() => removeNewVideo(index)}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Guardando cambios...
+              </>
+            ) : (
+              'Guardar Cambios'
+            )}
+          </button>
+          <button 
+                  type="button"
+                  onClick={handleCancel}
+                  className="w-full bg-transparent hover:bg-gray-100 text-gray-700 py-2 px-4 rounded-lg border border-gray-300 transition-all duration-300"
+                >
+                  Cancelar
+          </button>
+        </div>
+        {previewMedia && (
+          <div 
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setPreviewMedia(null)}
+          >
+            <button
+              onClick={() => setPreviewMedia(null)}
+              className="absolute top-4 right-4 bg-white text-black p-2 rounded-full hover:bg-gray-200 transition z-10"
+            >
+              <X className="w-6 h-6" />
+            </button>
+            
+            <div onClick={(e) => e.stopPropagation()} className="max-w-6xl max-h-[90vh] w-full">
+              {previewMedia.type === 'image' ? (
+                <img 
+                  src={previewMedia.url} 
+                  alt="Preview" 
+                  className="w-full h-full object-contain rounded-lg"
+                />
+              ) : (
+                <video 
+                  src={previewMedia.url} 
+                  controls 
+                  autoPlay
+                  className="w-full h-full max-h-[90vh] rounded-lg"
+                />
+              )}
+            </div>
+          </div>
+        )}
         </div>
       </form>
     </main>

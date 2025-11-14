@@ -67,11 +67,56 @@ const generateFileName = (originalName, productId, index) => {
   const timestamp = Date.now();
   return `products/${productId}/${timestamp}_${index}.${extension}`;
 };
+const axios = require('axios');
 
+const processAndUploadVideo = async (file, fileName, productId) => {
+  try {
+    const gcsFile = bucket.file(fileName);
+    const stream = gcsFile.createWriteStream({
+      metadata: {
+        contentType: file.mimetype,
+        cacheControl: 'public, max-age=31536000',
+      }
+    });
+
+    await new Promise((resolve, reject) => {
+      stream.on('error', reject);
+      stream.on('finish', resolve);
+      stream.end(file.buffer);
+    });
+
+    const videoProcessorUrl = process.env.VIDEO_PROCESSOR_URL;
+    const callbackUrl = `${process.env.API_BASE_URL}/api/videos/callback`;
+
+    await axios.post(
+      `${videoProcessorUrl}/process`,
+      {
+        videoFileName: fileName,
+        callbackUrl: callbackUrl,
+        productId: productId
+      },
+      {
+        headers: {
+          'x-video-process-key': process.env.VIDEO_PROCESS_KEY,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return { 
+      fileName, 
+      processing: true,
+      rawVideoUrl: `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME}/${fileName}`
+    };
+  } catch (error) {
+    throw new Error(`Error uploading video: ${error.message}`);
+  }
+};
 module.exports = {
   storage,
   bucket,
   uploadFileToGCS,
   deleteFileFromGCS,
-  generateFileName
+  generateFileName,
+  processAndUploadVideo
 };

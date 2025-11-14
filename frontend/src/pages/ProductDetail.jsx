@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { ChevronLeft, ChevronRight, Loader2,X,Video,  ShoppingCart, Plus, Minus } from 'lucide-react';
 
 const ProductDetail = () => {
   const { id } = useParams(); // Obtener el ID del producto desde la URL
   const navigate = useNavigate();
+
   const [product, setProduct] = useState(null);
   const [apiData, setApiData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+  const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [showModal, setShowModal] = useState(false);
+  const [previewMedia, setPreviewMedia] = useState(null);
 
   const link = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
@@ -27,7 +30,8 @@ const ProductDetail = () => {
     } catch (err) {
       console.error('Error fetching product:', err);
       setError(err.message);
-      return null;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -90,7 +94,7 @@ const ProductDetail = () => {
       name: product.name,
       price: product.price,
       quantity: quantity,
-      displayImageUrl: getProductImage()
+      image: product.media?.[0]?.url || product.images?.[0] || ''
     };
 
     // Obtener carrito actual
@@ -110,86 +114,89 @@ const ProductDetail = () => {
     localStorage.setItem('cart', JSON.stringify(currentCart));
     setShowModal(true);
   };
+  const nextMedia = () => {
+  const newIndex = (selectedMediaIndex + 1) % product.media.length;
+  setSelectedMediaIndex(newIndex);
+  if (previewMedia) { // ← NUEVO: Actualiza el modal
+    const media = product.media[newIndex];
+    setPreviewMedia({ type: media.type, url: media.url, thumbnail: media.thumbnail });
+  }
+};
 
-  // Función para obtener la imagen del producto
-  const getProductImage = (index = 0) => {
-    if (!product?.images || product.images.length === 0) return null;
-    
-    if (typeof product.images[index] === 'string') {
-      // URL de Google Cloud Storage
-      return product.images[index];
-    } else if(apiData?.image) {
-        return apiData.image;
-    } else if (apiData?.background_image) {
-        return apiData.background_image;
-    }   
-
-    return null;
+  const prevMedia = () => {
+    if (product?.media?.length > 0) {
+      setSelectedMediaIndex((prev) => 
+        prev === 0 ? product.media.length - 1 : prev - 1
+      );
+    }
   };
-
   // Renderizar galería de imágenes
-  const renderImageGallery = () => {
-    if (!product?.images || product.images.length === 0) {
+  const renderMedia = () => {
+    if (!product?.media || product.media.length === 0) {
       return (
         <div className="w-full h-96 bg-gray-200 rounded-lg flex items-center justify-center">
-          <span className="text-gray-500">Sin imágenes disponibles</span>
+          <p className="text-gray-500">Sin imagen disponible</p>
         </div>
       );
     }
 
-    const mainImage = getProductImage(selectedImageIndex);
+    const currentMedia = product.media[selectedMediaIndex];
+    /*
+    if (currentMedia.processing) {
+      return (
+        <div className="w-full h-96 bg-gray-900 rounded-lg flex flex-col items-center justify-center text-white">
+          <Loader2 className="w-12 h-12 animate-spin mb-4" />
+          <p>Procesando video...</p>
+        </div>
+      );
+    }
+    */
+    if (currentMedia.type === 'video') {
+      return (
+        <video
+          key={currentMedia.url}
+          controls
+          onClick={() => setPreviewMedia({ type: 'video', url: currentMedia.url, thumbnail: currentMedia.thumbnail })}
+          className="w-full h-96 rounded-lg object-cover"
+          poster={currentMedia.thumbnail}
+        >
+          <source src={currentMedia.url} type="video/mp4" />
+          Tu navegador no soporta videos.
+        </video>
+      );
+    }
 
     return (
-      <div className="space-y-4">
-        {/* Imagen principal */}
-        <div className="aspect-square overflow-hidden rounded-3xl bg-gray-200">
-          {mainImage ? (
-            <img
-              src={mainImage}
-              alt={product.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                console.error('Main image failed to load:', mainImage);
-                e.target.src = '/path/to/placeholder.jpg';
-              }}
-            />
-          ) : (
-            <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-              <span className="text-gray-500">Imagen no disponible</span>
-            </div>
-          )}
-        </div>
-
-        {/* Miniaturas */}
-        {product.images.length > 1 && (
-          <div className="flex space-x-2 overflow-x-auto">
-            {product.images.map((_, index) => {
-              const thumbnailUrl = getProductImage(index);
-              return (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImageIndex(index)}
-                  className={`flex-shrink-0 w-20 h-20 rounded-md overflow-hidden border-2 ${
-                    selectedImageIndex === index ? 'border-blue-500' : 'border-gray-300'
-                  }`}
-                >
-                  {thumbnailUrl ? (
-                    <img
-                      src={thumbnailUrl}
-                      alt={`${product.name} ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200"></div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      <img
+        src={currentMedia.url}
+        alt={product.name}
+        onClick={() => setPreviewMedia({ type: 'image', url: currentMedia.url })}
+        className="w-full h-96 rounded-lg object-cover"
+      />
     );
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <h2 className="text-2xl font-bold text-red-500 mb-4">Producto no encontrado</h2>
+        <button
+          onClick={() => navigate('/products')}
+          className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600"
+        >
+          Volver a productos
+        </button>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -248,15 +255,70 @@ const ProductDetail = () => {
             className="bg-[#FF0099] text-white font-medium text-1xl shadow-lg shadow-[#FF0099]/30 hover:shadow-[#FF0099]/50 rounded-lg px-4 py-2"
           >
             ← Volver a productos
-          </button>   
+          </button>
         </nav>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
           {/* Galería de imágenes */}
           <div>
-            {renderImageGallery()}
+          <div className="relative">
+            {renderMedia()}
+            
+            {product.media && product.media.length > 1 && (
+              <>
+                <button
+                  onClick={prevMedia}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button
+                  onClick={nextMedia}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
           </div>
+
+          {/* Miniaturas */}
+          {product.media && product.media.length > 1 && (
+            <div className="flex gap-2 mt-4 overflow-x-auto">
+              {product.media.map((media, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedMediaIndex(index)}
+                  className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 ${
+                    selectedMediaIndex === index ? 'border-blue-500' : 'border-gray-300'
+                  }`}
+                >
+                  {media.type === 'video' ? (
+                    media.thumbnail ? (
+                      <img 
+                        src={media.thumbnail} 
+                        alt="Video" 
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null
+                  ) : (
+                    <img src={media.url} alt={`Media ${index}`} className="w-full h-full object-cover" />
+                  )}
+                  {media.type === 'video' && !media.thumbnail && (
+                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                      <Video className="w-6 h-6 text-gray-400" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
           {/* Información del producto */}
           <div className="space-y-6 bg-white/65 backdrop-blur-xl p-6 rounded-2xl border border-white/25 shadow-xl ring-1 ring-white/10">
@@ -296,7 +358,7 @@ const ProductDetail = () => {
                 <div className="prose max-w-none dark:prose-invert">
                     <div
                         dangerouslySetInnerHTML={{
-                        __html: formatDescription(apiData.description),
+                        __html: formatDescription(product.description),
                         }}
                     />
                     </div>
@@ -417,6 +479,54 @@ const ProductDetail = () => {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+      {previewMedia && (
+        <div 
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          onClick={() => setPreviewMedia(null)}
+        >
+          <button
+            onClick={() => setPreviewMedia(null)}
+            className="absolute top-4 right-4 bg-white text-black p-2 rounded-full hover:bg-gray-200 transition z-10"
+          >
+            <X className="w-6 h-6" />
+          </button>
+          
+          {/* Flechas de navegación en preview */}
+          {product.media && product.media.length > 1 && (
+            <>
+              <button
+                onClick={(e) => { e.stopPropagation(); prevMedia(); }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 text-white p-3 rounded-full hover:bg-white/30 transition z-10"
+              >
+                <ChevronLeft className="w-8 h-8" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); nextMedia(); }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 text-white p-3 rounded-full hover:bg-white/30 transition z-10"
+              >
+                <ChevronRight className="w-8 h-8" />
+              </button>
+            </>
+          )}
+          
+          <div onClick={(e) => e.stopPropagation()} className="max-w-6xl max-h-[90vh] w-full">
+            {previewMedia.type === 'image' ? (
+              <img 
+                src={previewMedia.url} 
+                alt="Preview" 
+                className="w-full h-full object-contain rounded-lg"
+              />
+            ) : (
+              <video 
+                src={previewMedia.url} 
+                controls 
+                autoPlay
+                className="w-full h-full max-h-[90vh] rounded-lg"
+              />
+            )}
           </div>
         </div>
       )}

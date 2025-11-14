@@ -1,16 +1,14 @@
 import React, { useState } from 'react';
 
 import { 
-   X,  Image as ImageIcon, ChevronDown, Bold, Italic, Underline, Link, ListOrdered, ListTree, AlignLeft,
-   CheckCircle, AlertCircle
+   X,Upload,  Image as ImageIcon,Video, ChevronDown, Bold, Italic, Underline, Link, ListOrdered, ListTree, AlignLeft,
+   CheckCircle, AlertCircle, Loader2
 } from 'lucide-react';
 
 const link = import.meta.env.PROD 
   ? import.meta.env.VITE_BACKEND_URL
   : 'http://localhost:3000'
 const NewProduct = () => {
-  
-  // Form state
   const [productData, setProductData] = useState({
     name: '',
     code: '',
@@ -24,10 +22,12 @@ const NewProduct = () => {
     vendor: '',
   });
   
-  const [imageFile, setImageFile] = useState(null);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [imageFiles, setImageFiles] = useState([]);
+  const [videoFiles, setVideoFiles] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [videoPreviews, setVideoPreviews] = useState([]);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
-  
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -71,65 +71,147 @@ const NewProduct = () => {
   };
   
   const handleImageChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setImageFile(e.target.files[0]);
-      setSelectedImage(URL.createObjectURL(e.target.files[0]));
+    const files = Array.from(e.target.files);
+    
+    if (imageFiles.length + files.length > 10) {
+      setAlert({ show: true, type: "error", message: "Máximo 10 imágenes permitidas" });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 4000);
+      return;
     }
+
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith('image/')) {
+        setAlert({ show: true, type: "error", message: `${file.name} no es una imagen válida` });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 4000);
+        return false;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        setAlert({ show: true, type: "error", message: `${file.name} excede el tamaño máximo de 5MB` });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 4000);
+        return false;
+      }
+      return true;
+    });
+
+    setImageFiles(prev => [...prev, ...validFiles]);
+    
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreviews(prev => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleVideoChange = (e) => {
+    const files = Array.from(e.target.files);
+    
+    if (videoFiles.length + files.length > 2) {
+      setAlert({ show: true, type: "error", message: "Máximo 2 videos permitidos" });
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 4000);
+      return;
+    }
+
+    const validFiles = files.filter(file => {
+      if (!file.type.startsWith('video/')) {
+        setAlert({ show: true, type: "error", message: `${file.name} no es un video válido` });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 4000);
+        return false;
+      }
+      if (file.size > 100 * 1024 * 1024) {
+        setAlert({ show: true, type: "error", message: `${file.name} excede el tamaño máximo de 100MB` });
+        setTimeout(() => setAlert({ show: false, type: '', message: '' }), 4000);
+        return false;
+      }
+      return true;
+    });
+
+    setVideoFiles(prev => [...prev, ...validFiles]);
+    
+    validFiles.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setVideoPreviews(prev => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeImage = (index) => {
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeVideo = (index) => {
+    setVideoFiles(prev => prev.filter((_, i) => i !== index));
+    setVideoPreviews(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async () => {
-  const formData = new FormData();
-  for (const key in productData) {
-    formData.append(key, productData[key]);
-  }
-  if (imageFile) {
-    formData.append('images', imageFile);
-  }
-
-  const token = localStorage.getItem('userToken'); // ✅ Obtenemos el token
-
-  try {
-    const res = await fetch(`${link}/api/products`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}` // ✅ Enviamos el token aquí
-      },
-      body: formData
-    });
-
-    if (!res.ok) {
-      if (res.status === 401) {
-        throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
-      }
-      if (res.status === 403) {
-        throw new Error('Acceso denegado: solo administradores pueden crear productos.');
-      }
-      throw new Error('Error al guardar el producto.');
+    setIsSubmitting(true);
+    
+    const formData = new FormData();
+    for (const key in productData) {
+      formData.append(key, productData[key]);
     }
-
-    setAlert({ show: true, type: 'success', message: '✅ Producto guardado exitosamente' });
-
-
-    setProductData({
-      name: '', code: '', description: '', price: '', stock: '', taxRate: '',
-      category: '', tags: '', brand: '', vendor: ''
+    
+    imageFiles.forEach(file => {
+      formData.append('images', file);
     });
-    setImageFile(null);
-    setSelectedImage(null);
-  } catch (error) {
-    setAlert({
-      show: true,
-      type: 'error',
-      message: `⚠️ ${error.message}`
+    
+    videoFiles.forEach(file => {
+      formData.append('videos', file);
     });
-  } finally {
-    setTimeout(() => setAlert({ show: false, type: '', message: '' }), 2000);
-  }
-};
+
+    const token = localStorage.getItem('userToken');
+
+    try {
+      const res = await fetch(`${link}/api/products`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error('Tu sesión expiró. Inicia sesión nuevamente.');
+        }
+        if (res.status === 403) {
+          throw new Error('Acceso denegado: solo administradores pueden crear productos.');
+        }
+        throw new Error('Error al guardar el producto.');
+      }
+
+      setAlert({ show: true, type: 'success', message: '✅ Producto guardado exitosamente' });
+
+      setProductData({
+        name: '', code: '', description: '', price: '', stock: '', taxRate: '',
+        category: '', tags: '', brand: '', vendor: ''
+      });
+      setImageFiles([]);
+      setVideoFiles([]);
+      setImagePreviews([]);
+      setVideoPreviews([]);
+      setTimeout(() => {
+        navigate('/listaproductos');
+      }, 2000);
+    } catch (error) {
+      setAlert({
+        show: true,
+        type: 'error',
+        message: `⚠️ ${error.message}`
+      });
+    } finally {
+      setIsSubmitting(false);
+      setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
+    }
+  };
   
   return (
     <main className="flex-1 overflow-y-auto p-6 bg-transparent relative">
-          
           {alert.show && (
             <div 
               className={`fixed top-6 right-6 z-50 flex items-center rounded-lg shadow-lg border px-8 py-6 transition-all duration-300 transform mt-18 ${
@@ -390,58 +472,100 @@ const NewProduct = () => {
             </div>
             
             
-            <div className="lg:col-span-1">
-              <div className="bg-white/30 backdrop-blur-md rounded-xl shadow-lg border border-white/40 p-6 sticky top-6">
-                <h2 className="text-lg font-semibold mb-2 text-gray-800">Imagen del Producto</h2>
-                <p className="text-sm text-gray-600 mb-6">Agregue o cambie la imagen del producto</p>
-                
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 flex flex-col items-center justify-center bg-white/50 hover:bg-white/70 transition-colors">
-                  {selectedImage ? (
-                    <div className="relative w-full">
-                      <img 
-                        src={selectedImage} 
-                        alt="Product preview" 
-                        className="rounded-lg mx-auto object-contain max-h-48"
-                      />
-                      <button 
-                        onClick={() => setSelectedImage(null)}
-                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
-                      >
-                        <X size={16} />
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <ImageIcon size={48} className="text-gray-400 mb-4" />
-                      <p className="text-sm text-gray-600 mb-1">Arrastre su imagen aquí, o</p>
-                      <label htmlFor="fileUpload" className="cursor-pointer">
-                        <span className="text-blue-500 hover:text-blue-600 text-sm">explorar</span>
-                        <input 
-                          id="fileUpload"
-                          type="file"
-                          className="hidden"
-                          onChange={handleImageChange}
-                          accept=".jpg,.jpeg,.png"
-                        />
-                      </label>
-                      <p className="text-xs text-gray-500 mt-4">Formatos permitidos: jpeg, png</p>
-                    </>
-                  )}
-                </div>
-
-                <div className="mt-6 flex flex-col space-y-4">
-                  <button 
-                    onClick={handleSubmit}
-                    className="w-full bg-gradient-to-r from-blue-500 to-pink-500 hover:from-blue-600 hover:to-pink-600 text-white py-2 px-4 rounded-lg shadow transition-all duration-300"
-                  >
-                    Guardar Producto
-                  </button>
-                  <button className="w-full bg-transparent hover:bg-gray-100 text-gray-700 py-2 px-4 rounded-lg border border-gray-300 transition-all duration-300">
-                    Cancelar
-                  </button>
-                </div>
+            <div className="space-y-6">
+            {/* Imágenes */}
+            <div className="bg-white/30 backdrop-blur-md rounded-xl shadow-lg border border-white/40 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5" />
+                  Imágenes ({imageFiles.length}/10)
+                </h3>
+                <label className="cursor-pointer bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
+                  <Upload className="w-4 h-4 inline mr-2" />
+                  Subir Imágenes
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                {imagePreviews.map((preview, index) => (
+                  <div key={index} className="relative group">
+                    <img
+                      src={preview}
+                      alt={`Preview ${index}`}
+                      className="w-full h-32 object-cover rounded-lg"
+                    />
+                    <button
+                      onClick={() => removeImage(index)}
+                      className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
+
+            {/* Videos */}
+            <div className="bg-white/30 backdrop-blur-md rounded-xl shadow-lg border border-white/40 p-6">
+              <div className="flex items-center justify-between text-center">
+                <h3 className="text-lg font-semibold mb-2 text-gray-800">
+                  Videos ({videoFiles.length}/2)
+                </h3>
+                <label className="cursor-pointer bg-purple-500 text-white px-4 py-2 rounded-lg hover:bg-purple-600 transition">
+                  <Upload className="w-4 h-4 inline mr-2" />
+                  Subir Videos
+                  <input
+                    type="file"
+                    multiple
+                    accept="video/*"
+                    onChange={handleVideoChange}
+                    className="hidden"
+                    disabled={videoFiles.length >= 2}
+                  />
+                </label>
+              </div>
+              
+              <div className="space-y-4">
+                {videoPreviews.map((preview, index) => (
+                  <div key={index} className="relative group">
+                    <video
+                      src={preview}
+                      controls
+                      className="w-full h-48 rounded-lg"
+                    />
+                    <button
+                      onClick={() => removeVideo(index)}
+                      className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Guardando...
+                </>
+              ) : (
+                'Guardar Producto'
+              )}
+            </button>
+          </div>
           </div>
         </main>
   );

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const Product = require('../models/Product');
-const { uploadFileToGCS, deleteFileFromGCS, generateFileName } = require('../config/storage');
+const { uploadFileToGCS, deleteFileFromGCS, generateFileName, processAndUploadVideo } = require('../config/storage');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
 
 // Configuración de multer para manejar archivos en memoria
@@ -10,31 +10,37 @@ const storage = multer.memoryStorage();
 const upload = multer({ 
   storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB límite por archivo
+    fileSize: 100 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
-    // Filtrar solo imágenes
-    if (file.mimetype.startsWith('image/')) {
+    const allowedImageTypes = /jpeg|jpg|png|webp/;
+    const allowedVideoTypes = /mp4|webm/;
+    const mimetype = file.mimetype;
+
+    if (mimetype.startsWith('image/') && allowedImageTypes.test(mimetype)) {
+      cb(null, true);
+    } else if (mimetype.startsWith('video/') && allowedVideoTypes.test(mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Solo se permiten archivos de imagen'), false);
+      cb(new Error('Solo se permiten imágenes (JPG, PNG, WebP) y videos (MP4, WebM)'), false);
     }
   }
 });
 
 // Crear producto
-router.post('/', protect, isAdmin, upload.array('images', 5), async (req, res) => {
+router.post('/', protect, isAdmin, upload.fields([{ name: 'images', maxCount: 10 },{ name: 'videos', maxCount: 2 }]), async (req, res) => {
   try {
-    // Crear el producto primero para obtener el ID
     const product = new Product({
       ...req.body,
-      images: [] // Inicialmente vacío
+      images: [],
+      media: []
     });
 
     const savedProduct = await product.save();
 
     const GameCode = require('../models/GameCode');
     const crypto = require('crypto');
+    const mediaItems = [];
 
     const generateCodesForProduct = async (productId, stock) => {
       const codes = [];
@@ -50,25 +56,54 @@ router.post('/', protect, isAdmin, upload.array('images', 5), async (req, res) =
       await generateCodesForProduct(savedProduct._id, savedProduct.stock);
     }
 
-    if (req.files && req.files.length > 0) {
-      const imageUrls = [];
-
-      for (let i = 0; i < req.files.length; i++) {
-        const file = req.files[i];
+    if (req.files.images && req.files.images.length > 0) {
+      for (let i = 0; i < req.files.images.length; i++) {
+        const file = req.files.images[i];
         const fileName = generateFileName(file.originalname, savedProduct._id, i);
 
         try {
           const imageUrl = await uploadFileToGCS(file, fileName);
-          imageUrls.push(imageUrl);
+          mediaItems.push({
+            type: 'image',
+            url: imageUrl,
+            fileName: fileName,
+            order: i
+          });
         } catch (uploadError) {
           console.error('Error uploading image:', uploadError);
         }
       }
-
-      // Actualizar el producto con las URLs
-      savedProduct.images = imageUrls;
-      await savedProduct.save();
     }
+    if (req.files.videos && req.files.videos.length > 0) {
+      const videoCount = Math.min(req.files.videos.length, 2);
+      
+      for (let i = 0; i < videoCount; i++) {
+        const file = req.files.videos[i];
+        const videoFileName = `products/${savedProduct._id}/videos/${Date.now()}_${i}.mp4`;
+
+        try {
+          const { rawVideoUrl, processing } = await processAndUploadVideo(
+            file, 
+            videoFileName, 
+            savedProduct._id
+          );
+          
+          mediaItems.push({
+            type: 'video',
+            url: rawVideoUrl,
+            thumbnail: '',
+            fileName: videoFileName,
+            order: mediaItems.length,
+            processing: processing
+          });
+        } catch (uploadError) {
+          console.error('Error uploading video:', uploadError);
+        }
+      }
+    }
+    savedProduct.images = mediaItems.filter(m => m.type === 'image').map(m => m.url);
+    savedProduct.media = mediaItems;
+    await savedProduct.save();
 
     res.status(201).json(savedProduct);
   } catch (error) {
@@ -99,53 +134,125 @@ router.get('/:id', async (req, res) => {
 });
 
 // Actualizar producto
-router.put('/:id', protect, isAdmin, upload.array('images', 5), async (req, res) => {
+router.put('/:id', protect, isAdmin, upload.fields([
+  { name: 'images', maxCount: 10 },
+  { name: 'videos', maxCount: 2 }
+]), async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
+    if (!product) {
+      return res.status(404).json({ error: 'Producto no encontrado' });
+    }
 
-    const updatedData = { ...req.body };
-    
-    // Si se suben nuevas imágenes
-    if (req.files && req.files.length > 0) {
-      // Eliminar imágenes antiguas de GCS
-      if (product.images && product.images.length > 0) {
-        for (const imageUrl of product.images) {
-          try {
-            // Extraer el nombre del archivo de la URL
-            const fileName = imageUrl.split('/').pop();
-            const fullPath = `products/${product._id}/${fileName}`;
-            await deleteFileFromGCS(fullPath);
-          } catch (deleteError) {
-            console.error('Error deleting old image:', deleteError);
-          }
+    // 1. ACTUALIZAR CAMPOS BÁSICOS (sin tocar media)
+    const fieldsToUpdate = ['name', 'code', 'description', 'price', 'stock', 'taxRate', 'category', 'tags', 'brand', 'vendor'];
+    fieldsToUpdate.forEach(field => {
+      if (req.body[field] !== undefined) {
+        product[field] = req.body[field];
+      }
+    });
+
+    // 2. MANEJAR ELIMINACIÓN DE ARCHIVOS (si se solicita)
+    if (req.body.deleteMedia) {
+      const filesToDelete = JSON.parse(req.body.deleteMedia);
+      
+      for (const fileName of filesToDelete) {
+        try {
+          await deleteFileFromGCS(fileName);
+          // Remover del array media
+          product.media = product.media.filter(m => m.fileName !== fileName);
+          console.log(`Archivo eliminado: ${fileName}`);
+        } catch (error) {
+          console.error('Error deleting file:', fileName, error);
         }
       }
+    }
 
-      // Subir nuevas imágenes
-      const imageUrls = [];
-      for (let i = 0; i < req.files.length; i++) {
-        const file = req.files[i];
-        const fileName = generateFileName(file.originalname, product._id, i);
-        
+    // 3. AGREGAR NUEVAS IMÁGENES (sin borrar las existentes)
+    if (req.files?.images && req.files.images.length > 0) {
+      for (let i = 0; i < req.files.images.length; i++) {
+        const file = req.files.images[i];
+        const fileName = generateFileName(file.originalname, product._id, Date.now() + i);
+
         try {
           const imageUrl = await uploadFileToGCS(file, fileName);
-          imageUrls.push(imageUrl);
+          
+          // PUSH (agregar) en vez de reemplazar
+          product.media.push({
+            type: 'image',
+            url: imageUrl,
+            fileName: fileName,
+            order: product.media.length,
+            uploadedAt: new Date()
+          });
+          
+          console.log(`Nueva imagen agregada: ${fileName}`);
         } catch (uploadError) {
           console.error('Error uploading new image:', uploadError);
         }
       }
-      
-      updatedData.images = imageUrls;
     }
 
-    const updatedProduct = await Product.findByIdAndUpdate(
-      req.params.id, 
-      updatedData, 
-      { new: true }
-    );
+    // 4. AGREGAR NUEVOS VIDEOS (sin borrar los existentes)
+    if (req.files?.videos && req.files.videos.length > 0) {
+      const videoCount = Math.min(req.files.videos.length, 2);
+      
+      for (let i = 0; i < videoCount; i++) {
+        const file = req.files.videos[i];
+        const videoFileName = `products/${product._id}/videos/${Date.now()}_${i}.mp4`;
+
+        try {
+          const { rawVideoUrl, processing } = await processAndUploadVideo(
+            file, 
+            videoFileName, 
+            product._id
+          );
+          
+          // PUSH (agregar) en vez de reemplazar
+          product.media.push({
+            type: 'video',
+            url: rawVideoUrl,
+            thumbnail: '',
+            fileName: videoFileName,
+            order: product.media.length,
+            processing: processing,
+            uploadedAt: new Date()
+          });
+          
+          console.log(`Nuevo video agregado: ${videoFileName}`);
+        } catch (uploadError) {
+          console.error('Error uploading new video:', uploadError);
+        }
+      }
+    }
+
+    // 5. ACTUALIZAR ARRAY images[] (para compatibilidad con código antiguo)
+    product.images = product.media
+      .filter(m => m.type === 'image')
+      .map(m => m.url);
+
+    // 6. ACTUALIZAR CÓDIGOS DE JUEGO (si cambió el stock)
+    const GameCode = require('../models/GameCode');
+    const currentCodes = await GameCode.countDocuments({ product: product._id });
     
-    res.json(updatedProduct);
+    if (product.stock > currentCodes) {
+      const codesToGenerate = product.stock - currentCodes;
+      const crypto = require('crypto');
+      const newCodes = [];
+      
+      for (let i = 0; i < codesToGenerate; i++) {
+        const code = crypto.randomBytes(6).toString('hex').toUpperCase();
+        newCodes.push({ product: product._id, code });
+      }
+      
+      await GameCode.insertMany(newCodes);
+      console.log(`${newCodes.length} nuevos códigos generados`);
+    }
+
+    // 7. GUARDAR CAMBIOS
+    await product.save();
+    
+    res.json(product);
   } catch (error) {
     console.error('Error updating product:', error);
     res.status(400).json({ error: error.message });
@@ -154,24 +261,25 @@ router.put('/:id', protect, isAdmin, upload.array('images', 5), async (req, res)
 
 // Eliminar producto
 router.delete('/:id', protect, isAdmin, async (req, res) => {
-
   try {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
 
-    // Eliminar imágenes de GCS antes de eliminar el producto
-    if (product.images && product.images.length > 0) {
-      for (const imageUrl of product.images) {
+    // Eliminar todos los archivos de GCS (imágenes Y videos)
+    if (product.media && product.media.length > 0) {
+      for (const mediaItem of product.media) {
         try {
-          // Extraer el nombre del archivo de la URL
-          const fileName = imageUrl.split('/').pop();
-          const fullPath = `products/${product._id}/${fileName}`;
-          await deleteFileFromGCS(fullPath);
+          await deleteFileFromGCS(mediaItem.fileName);
+          console.log(`Archivo eliminado: ${mediaItem.fileName}`);
         } catch (deleteError) {
-          console.error('Error deleting image:', deleteError);
+          console.error('Error deleting file:', mediaItem.fileName, deleteError);
         }
       }
     }
+    // Eliminar códigos de juego asociados
+    const GameCode = require('../models/GameCode');
+    await GameCode.deleteMany({ product: product._id });
+    console.log(`Códigos de juego eliminados para producto ${product._id}`);
 
     await Product.findByIdAndDelete(req.params.id);
     res.json({ message: 'Producto eliminado con éxito' });

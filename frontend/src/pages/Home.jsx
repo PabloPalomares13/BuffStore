@@ -1,43 +1,61 @@
-import imghome from "../assets/imghome.png";
-import React, { useState, useEffect } from 'react';
-import { LazyLoadImage } from 'react-lazy-load-image-component';
-import 'react-lazy-load-image-component/src/effects/blur.css'; 
 
+import React, { useState, useEffect, useRef } from 'react';
+import { LazyLoadImage } from 'react-lazy-load-image-component';
+import { ChevronLeft, ChevronRight,ShoppingCart } from "lucide-react";
+import 'react-lazy-load-image-component/src/effects/blur.css'; 
+import fondoAro1 from "../assets/fondoAro1.png"; // tu imagen del aro verde (PNG)
+import personaje1 from "../assets/personaje1.png"; // izquierda
+import personaje2 from "../assets/personaje2.png"; // centro
+import personaje3 from "../assets/personaje3.png";
+import logo from "../assets/logobuff0033.png";
 import { useNavigate } from 'react-router-dom';
 const link = import.meta.env.PROD 
   ? import.meta.env.VITE_BACKEND_URL
   : 'http://localhost:3000'
 
 const logos = [
+    
     {
-      name: 'Vercel',
-      url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Rockstar_Games_Logo.svg/250px-Rockstar_Games_Logo.svg.png',
-    },
-    {
-      name: 'Nextjs',
+      name: 'Ubisoft',
       url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/78/Ubisoft_logo.svg/250px-Ubisoft_logo.svg.png',
+      singleTone: true
     },
     {
-      name: 'Prime',
+      name: 'EA',
       url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/EA_Sports_monochrome_logo.svg/250px-EA_Sports_monochrome_logo.svg.png',
+      singleTone: true
     },
     {
-      name: 'Trustpilot',
+      name: 'Activision',
       url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Activision.svg/250px-Activision.svg.png',
+      singleTone: true
     },
     {
-      name: 'Webflow',
+      name: 'Riot',
       url: 'https://upload.wikimedia.org/wikipedia/en/thumb/5/5b/Riot_Games_2022.svg/250px-Riot_Games_2022.svg.png',
+      singleTone: true
     },
   
     {
-      name: 'Airbnb',
-      url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/31/Epic_Games_logo.svg/100px-Epic_Games_logo.svg.png',
+      name: 'Epic Games',
+      url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/Epic_Games_Store_logo_2023_vertical_black.svg/800px-Epic_Games_Store_logo_2023_vertical_black.svg.png',
+      singleTone: true
     },
     {
-      name: 'Tina',
+      name: 'Sony',
       url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Sony_logo.svg/250px-Sony_logo.svg.png',
+      singleTone: true
     },
+    {
+      name: 'Xbox',
+      url: 'https://upload.wikimedia.org/wikipedia/commons/d/d7/Xbox_logo_%282019%29.svg',
+      singleTone: true
+    },
+    {
+      name: 'PlayStation',
+      url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/PlayStation_logo_and_wordmark.svg/1920px-PlayStation_logo_and_wordmark.svg.png',
+      singleTone: true
+    }
   ]
   
   const Home = () => {
@@ -46,6 +64,10 @@ const logos = [
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
+    const [currentIndex, setCurrentIndex] = useState(3);
+    const [isAutoScrolling, setIsAutoScrolling] = useState(true);
+    const scrollContainerRef = useRef(null);
+    const autoScrollRef = useRef(null);
     
     const navigate = useNavigate();
     const handleProductClick = (productId) => {
@@ -53,38 +75,68 @@ const logos = [
     };
 
     const fetchProducts = async () => {
-  try {
-    const response = await fetch(`${link}/api/products`);
-    if (!response.ok) {
-      throw new Error("Error al obtener los productos");
-    }
-    const data = await response.json();
-    
-    // Ahora las imágenes son URLs directas de Google Cloud Storage
-    const productsWithImages = data.map(product => {
-      if (product.images && product.images.length > 0) {
-        return { 
-          ...product, 
-          displayImageUrl: product.images[0] // Usar directamente la URL de GCS
-        };
-      }
-      return {
-        ...product,
-        displayImageUrl: '/path/to/placeholder.jpg' // Tu placeholder
+        try {
+          const response = await fetch(`${link}/api/products`);
+          if (!response.ok) {
+            throw new Error("Error al obtener los productos");
+          }
+          const data = await response.json();
+          
+          // Ahora las imágenes son URLs directas de Google Cloud Storage
+          const productsWithImages = data.map(product => {
+            if (product.images && product.images.length > 0) {
+              return { 
+                ...product, 
+                displayImageUrl: product.images[0] // Usar directamente la URL de GCS
+              };
+            }
+            return {
+              ...product,
+              displayImageUrl: '/path/to/placeholder.jpg' // Tu placeholder
+            };
+          });
+          
+          // 🔥 AGREGAR ESTO: Crear copias para efecto infinito
+          const infiniteProducts = [
+            ...productsWithImages.slice(-3), // últimos 3 al inicio
+            ...productsWithImages,           // todos los productos
+            ...productsWithImages.slice(0, 3) // primeros 3 al final
+          ];
+          
+          setProducts(infiniteProducts); // Cambiar esto
+          setLoading(false);
+          
+        } catch (err) {
+          console.error(err);
+          setLoading(false);
+        }
       };
-    });
-    
-    setProducts(productsWithImages || []);
-    setLoading(false);
-    
-  } catch (err) {
-    console.error(err);
-    setLoading(false);
-  }
-};
+
       useEffect(() => {
         fetchProducts();
       }, []);
+      
+
+      useEffect(() => {
+        if (isAutoScrolling && products.length > 0) {
+          autoScrollRef.current = setInterval(() => {
+            setCurrentIndex((prev) => {
+              const newIndex = prev + 1;
+              if (newIndex >= products.length - 3) {
+                setTimeout(() => setCurrentIndex(3), 700);
+                return newIndex;
+              }
+              return newIndex;
+            });
+          }, 3500);
+        }
+        
+        return () => {
+          if (autoScrollRef.current) {
+            clearInterval(autoScrollRef.current);
+          }
+        };
+      }, [isAutoScrolling, products.length]);
 
       const handleAddToCart = (product) => {
         setSelectedProduct(product);
@@ -124,144 +176,368 @@ const logos = [
       const handleGoToCheckout = () => {
         window.location.href = '/checkout';
       };
+
+      const handlePrevious = () => {
+        setIsAutoScrolling(false);
+        setCurrentIndex((prev) => {
+          const newIndex = prev - 1;
+          // Si llega al inicio (posición 2), salta al final real
+          if (newIndex < 3) {
+            setTimeout(() => setCurrentIndex(products.length - 4), 700);
+            return newIndex;
+          }
+          return newIndex;
+        });
+      };
+
+      const handleNext = () => {
+        setIsAutoScrolling(false);
+        setCurrentIndex((prev) => {
+          const newIndex = prev + 1;
+          // Si llega al final (posición length-3), salta al inicio real
+          if (newIndex >= products.length - 3) {
+            setTimeout(() => setCurrentIndex(3), 700);
+            return newIndex;
+          }
+          return newIndex;
+        });
+      };
+
+      const getCardStyle = (index) => {
+          const diff = index - currentIndex;
+          const absPosition = Math.abs(diff);
+          
+          // Cartas visibles: -2, -1, 0 (centro), 1, 2
+          if (absPosition > 2) {
+            return { display: 'none' };
+          }
+
+          const isCenter = diff === 0;
+          const scale = isCenter ? 1.15 : 1 - (absPosition * 0.15);
+          const translateX = diff * 320;
+          const translateZ = isCenter ? 50 : -100 * absPosition;
+          const opacity = isCenter ? 1 : 1 - (absPosition * 0.25);
+          const blur = isCenter ? 0 : absPosition * 2;
+
+          return {
+            transform: `translateX(${translateX}px) translateZ(${translateZ}px) scale(${scale})`,
+            opacity,
+            filter: `blur(${blur}px)`,
+            zIndex: 10 - absPosition,
+            transition: 'all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)'
+          };
+        };
+
+        if (products.length === 0) {
+          return (
+            <div className="flex items-center justify-center h-96">
+              <div className="text-gray-400 text-xl">Cargando productos...</div>
+            </div>
+          );
+        }
+
     return (
     <>  
-        
-        <div className="px-4 sm:px-6 md:px-8 lg:px-12 mx-auto max-w-7xl pt-32 sm:pt-32 md:pt-24 lg:pt-36 mb-32">
-            <div className="flex flex-col md:flex-row items-center gap-6 md:gap-12 lg:gap-16">
-                <div className="w-full md:w-1/2 lg:w-5/12">
-                    <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl text-[#DFE8D8] font-extrabold leading-tight sm:text-center text-center">
-                        Busca, Compra y Disfruta
-                    </h1>
-                    <div className="mt-4 sm:mt-6">
-                        <h2 
-                            className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl font-bold text-transparent bg-clip-text text-center "
-                            style={{
-                                backgroundImage: 'linear-gradient(90deg, rgba(189, 157, 212, 1) 0%, rgba(150, 217, 210, 1) 99%)'
-                            }}
-                        >
-                            La Plataforma de venta de codigos para videojuegos y microtransacciones mas confiable del mercado
-                        </h2>
-                    </div>
-                    <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row gap-4">
-                        <button className="w-full sm:w-auto px-6 py-3 bg-[#0C9C97] text-white font-bold rounded-lg hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-700 transition-colors">
-                            Busca Ahora
-                        </button>
-                    </div>
+      <div className="relative h-screen w-full overflow-hidden bg-gradient-to-b from-black via-[#001a00] to-[#00ff73]/10 flex items-center justify-center">
+        {/* Fondo verde circular superpuesto bg-gradient-to-b from-black via-[#001a00] to-[#00ff73]/10*/}
+        <div className="relative w-full h-full flex items-center justify-center">
+            <div className="absolute w-full h-full flex items-center justify-center">
+              <div className="relative w-[95%] sm:w-[90%] md:w-[85%] lg:w-[75%] xl:w-[65%] h-[60%] sm:h-[65%] md:h-[70%]">
+              {/* Personaje Izquierdo */}
+              <div className="absolute left-0 top-[40%] -translate-y-1/2 w-[38%] sm:w-[36%] md:w-[32%] lg:w-[34%]">
+                <div className="relative w-full h-full flex items-center justify-center group">
+                  <img 
+                    src={personaje1} 
+                    alt="Personaje 1" 
+                    className="w-full h-auto object-contain transition-transform duration-800 ease-out group-hover:scale-105 group-hover:drop-shadow-[0_0_25px_rgba(255,0,128,0.5)]"
+                  />
                 </div>
-                <div className="w-full md:w-1/2 lg:w-7/12 mt-8 md:mt-0">
-                    <img 
-                        className="w-full h-auto object-cover rounded-xl shadow-lg" 
-                        src={imghome} 
-                        alt="Plataforma de videojuegos" 
-                        role="img" 
-                    />
-                </div>
-            </div>
-        </div>
+              </div>
 
-        
-        <div className="w-full py-12 bg-white/20 mb-22">
-            <div className="mx-auto w-full px-4 md:px-8">
+              {/* Personaje Centro (Master Chief) */}
+              <div className="absolute left-1/2 -translate-x-1/2 top-[38%] -translate-y-1/2 w-[42%] sm:w-[38%] md:w-[35%] lg:w-[36%]">
+                <div className="relative w-full h-full flex items-center justify-center group">
+                  <img 
+                    src={personaje2} 
+                    alt="Personaje 2" 
+                    className="w-full h-auto object-contain transition-transform duration-800 ease-out group-hover:scale-105 group-hover:drop-shadow-[0_0_25px_rgba(255,0,128,0.5)]"
+                  />
+                </div>
+              </div>
+
+              {/* Personaje Derecho */}
+              <div className="absolute right-0 top-[40%] -translate-y-1/2 w-[40%] sm:w-[34%] md:w-[32%] lg:w-[32%]">
+                <div className="relative w-full h-full flex items-center justify-center group">
+                  <img 
+                    src={personaje3} 
+                    alt="Personaje 3" 
+                    className="w-full h-auto object-contain transition-transform duration-800 ease-out group-hover:scale-105 group-hover:drop-shadow-[0_0_25px_rgba(255,0,128,0.5)]"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+            <div className="absolute bottom-0 w-full h-full flex items-end justify-center pointer-events-none">
+              <img 
+                src={fondoAro1} 
+                alt="Aro verde" 
+                className="w-[100%] object-cover opacity-90 h-[100%] sm:h-[100%] md:h-[100%] lg:h-[100%] drop-shadow-[0_10px_25px_rgba(0,0,0,0.7)]"
+              />
+            </div>
+          
+            {/* test */}
+          <div className="absolute bottom-16 sm:bottom-20 text-center px-4 z-20">
+            <div className="backdrop-blur-lg bg-white/10 py-6 px-8 sm:py-8 sm:px-10 md:py-10 md:px-14 rounded-2xl inline-block shadow-[0_0_30px_rgba(0,255,115,0.2)]">
+              <h1 className="font-['Quantico'] font-medium text-white drop-shadow-lg leading-tight text-[clamp(2.5rem,8vw,6rem)]">
+                Buff Store
+              </h1>
+              <p className="font-['Quantico'] font-semibold text-white mt-4 drop-shadow-lg leading-snug text-[clamp(1rem,3vw,1.75rem)]">
+                La Plataforma de venta de codigos para videojuegos <br className="hidden sm:block" /> y microtransacciones mas confiable del mercado
+              </p>
+            </div>
+          </div>
+
+          {/* Efecto de viñeta en los bordes */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/60 pointer-events-none"></div>
+        </div>
+      </div>
+
+
+      <div className="relative w-full py-20 my-10">
+        {/* Fondo con degradado */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#121212] via-white/15 to-[#121212]" />
+        {/* Contenido del carrusel centrado */}
+        <div className="relative z-10 mx-auto w-full px-4 md:px-8 h-[35vh] flex flex-col justify-center space-y-30">
+          <div
+            className="group relative flex gap-6 overflow-hidden p-2 items-center justify-center"
+            style={{
+              maskImage:
+                'linear-gradient(to left, transparent 0%, black 20%, black 80%, transparent 95%)',
+            }}
+          >
+            {Array(5)
+              .fill(null)
+              .map((_, index) => (
                 <div
-                className="group relative mt-6 flex gap-6 overflow-hidden p-2"
-                style={{
-                    maskImage:
-                    'linear-gradient(to left, transparent 0%, black 20%, black 80%, transparent 95%)',
-                }}
+                  key={index}
+                  className="flex shrink-0 animate-logo-cloud-left flex-row justify-around gap-6 items-center"
                 >
-                {Array(5)
-                    .fill(null)
-                    .map((_, index) => (
+                  {logos.map((logo, key) => (
                     <div
-                        key={index}
-                        className="flex shrink-0 animate-logo-cloud flex-row justify-around gap-6"
+                      key={key}
+                      className="flex items-center justify-center bg-transparent p-2 "
+                      style={{
+                        width: "180px",
+                        height: "80px",
+                      }}
                     >
-                        {logos.map((logo, key) => (
-                        <div 
-                            key={key} 
-                            className="flex items-center justify-center bg-transparent p-2"
-                            style={{
-                                width: "180px",
-                                height: "80px"
-                            }}
-                        >
-                            <div className="relative w-full h-full">
-                                <img
-                                    src={logo.url}
-                                    alt={`${logo.name}`}
-                                    className="absolute top-0 left-0 right-0 bottom-0 m-auto max-w-full max-h-full object-contain "
-                                />
-                            </div>
-                        </div>
-                        ))}
+                      <div className="relative w-full h-full flex ">
+                        <img
+                          src={logo.url}
+                          alt={logo.name}
+                          className="absolute top-0 left-0 right-0 bottom-0 m-auto max-w-full max-h-full object-contain pointer-events-none"
+                          style={{
+                            filter: logo.singleTone
+                              ? "brightness(0) invert(1)" // solo para logos monocromáticos
+                              : "none", // logos de color quedan intactos
+                          }}
+                        />
+                      </div>
                     </div>
-                    ))}
+                  ))}
                 </div>
-            </div>
+              ))}
+          </div>
+          <div
+            className="group relative flex gap-6 overflow-hidden p-2 items-center justify-center"
+            style={{
+              maskImage:
+                'linear-gradient(to left, transparent 0%, black 20%, black 80%, transparent 95%)',
+            }}
+          >
+            {Array(5)
+              .fill(null)
+              .map((_, index) => (
+                <div
+                  key={index}
+                  className="flex shrink-0 animate-logo-cloud-right flex-row justify-around gap-6 items-center"
+                >
+                  {logos.map((logo, key) => (
+                    <div
+                      key={key}
+                      className="flex items-center justify-center bg-transparent p-2"
+                      style={{
+                        width: "180px",
+                        height: "80px",
+                      }}
+                    >
+                      <div className="relative w-full h-full flex items-center justify-center">
+                        <img
+                          src={logo.url}
+                          alt={logo.name}
+                          className="absolute top-0 left-0 right-0 bottom-0 m-auto max-w-full max-h-full object-contain"
+                          style={{
+                            filter: logo.singleTone
+                              ? "brightness(0) invert(0)" // solo para logos monocromáticos
+                              : "none", // logos de color quedan intactos
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+          </div>
         </div>
         
-        <div className="px-4">
-          <h1 className="text-4xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl text-center font-quantico text-[#DFE8D8]">
-            Recomendados para ti
-          </h1>
-        </div>        
-
+      </div>    
+  
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
           </div>
         ) : (
-          <div className="py-20 px-4 grid grid-cols-1 sm:max-sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 justify-items-center gap-y-20 gap-x-14 mt-10 mb-5">
-  {products.map(product => (
-    <div 
-      key={product._id} 
-      className="w-86 h-130 bg-white/85 rounded-xl shadow-lg border border-white/10 duration-500 hover:scale-105 hover:shadow-xl cursor-pointer"
-      onClick={() => handleProductClick(product._id)} // Hacer clickeable toda la card
-    >
-      {product.displayImageUrl ? (
-        <img 
-          src={product.displayImageUrl} 
-          alt={product.name} 
-          className="h-80 w-full object-cover rounded-t-xl"
-          onError={(e) => {
-            console.error('Image failed to load:', product.displayImageUrl);
-            if (!e.target.src.includes('/api/products/image/')) {
-              e.target.src = `${link}/api/products/image/${product._id}/0`;
-            }
-          }}
-        />
-      ) : (
-        <div className="h-80 w-full bg-gray-200 rounded-t-xl flex items-center justify-center">
-          <span className="text-gray-500">No image available</span>
+        <div className="relative w-full py-16 px-4 bg-gradient-to-b from-black via-[#0a0a0a] to-black overflow-hidden">
+          {/* Título */}
+          <div className="text-center mb-12">
+            <h2 className="text-5xl font-['Quantico'] font-bold text-white bg-clip-text text-transparent mb-3">
+              Productos Destacados
+            </h2>
+            <p className="text-gray-400 text-lg">Explora nuestra colección exclusiva</p>
+          </div>
+
+          {/* Carrusel Container */}
+          <div 
+            className="relative h-[550px] flex items-center justify-center"
+            style={{ perspective: '2000px' }}
+            onMouseEnter={() => setIsAutoScrolling(false)}
+            onMouseLeave={() => setIsAutoScrolling(true)}
+          >
+            {/* Cards Container */}
+            <div className="relative w-full h-full flex items-center justify-center">
+              {products.map((product, index) => (
+                <div
+                  key={`${product._id}-${index}`} 
+                  className="absolute w-[380px] h-[450px] cursor-pointer"
+                  style={getCardStyle(index)}
+                  onClick={() => handleProductClick(product._id)}
+                >
+                  <div className="relative w-full h-full bg-gradient-to-br from-[#1a1a1a]/90 via-[#2a2a2a]/80 to-[#000000]/70 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl overflow-hidden group">
+                    {/* Imagen del producto */}
+                    {product.displayImageUrl ? (
+                      <div className="absolute inset-0 overflow-hidden">
+                        <img
+                          src={product.displayImageUrl}
+                          alt={product.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        />
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-800 text-gray-400">
+                        No image available
+                      </div>
+                    )}
+
+                    {/* Overlay degradado */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent opacity-90" />
+
+                    {/* Glow effect en hover */}
+                    <div className="absolute inset-0 bg-gradient-to-r from-[#FF0080]/20 via-transparent to-[#00ff73]/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                    {/* Contenido */}
+                    <div className="absolute inset-0 flex flex-col justify-end p-6 z-10">
+                      {/* Tags */}
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {(product.tags || product.category || [])
+                          .toString()
+                          .split(',')
+                          .slice(0, 2)
+                          .map((tag, idx) => (
+                            <span
+                              key={idx}
+                              className="text-xs px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-xl border border-white/20 font-medium text-white/90 hover:bg-white/25 transition-colors duration-300"
+                            >
+                              {tag.trim()}
+                            </span>
+                          ))}
+                      </div>
+
+                      {/* Título */}
+                      <h3 className="text-2xl font-bold mb-2 text-white leading-tight drop-shadow-lg">
+                        {product.name}
+                      </h3>
+
+                      {/* Precio */}
+                      <p className="text-3xl font-bold bg-gradient-to-r from-[#FF0080] to-[#00ff73] bg-clip-text text-transparent mb-4">
+                        ${Number(product.price).toLocaleString('en-US')}
+                      </p>
+
+                      {/* Botón */}
+                      <button
+                        onClick={(e) => {e.stopPropagation(); // Evitar que se active el click del card
+                                      handleAddToCart(product);}}
+                        className="group/btn relative w-full py-3.5 rounded-2xl overflow-hidden bg-gradient-to-r from-[#FF0080]/70 via-[#121212]/70 to-[#00ff73]/70 bg-[length:200%_auto] hover:bg-[position:100%_center] transition-all duration-800 text-white font-bold shadow-lg hover:shadow-[#FF0080]/50 transition-all duration-300 hover:scale-105 active:scale-95"
+                      >
+                        <span className="relative z-10 flex items-center justify-center gap-2">
+                          <ShoppingCart className="w-5 h-5" />
+                          Agregar al carrito
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Corner decoration */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl from-[#FF0080]/30 to-transparent rounded-bl-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Botones de navegación */}
+            <button
+              onClick={handlePrevious}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-20 w-14 h-14 rounded-full bg-gradient-to-r from-[#FF0080]/80 to-[#121212] backdrop-blur-xl flex items-center justify-center text-white shadow-2xl hover:scale-110 hover:shadow-[#FF0080]/50 transition-all duration-300 active:scale-95"
+            >
+              <ChevronLeft className="w-7 h-7" />
+            </button>
+
+            <button
+              onClick={handleNext}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-20 w-14 h-14 rounded-full bg-gradient-to-r from-[#121212] to-[#00ff73]/80 backdrop-blur-xl  flex items-center justify-center text-white shadow-2xl hover:scale-110 hover:shadow-[#00ff73]/50 transition-all duration-300 active:scale-95"
+            >
+              <ChevronRight className="w-7 h-7" />
+            </button>
+          </div>
+
+          {/* Indicadores de posición */}
+          <div className="flex justify-center gap-2 mt-8">
+            {products.slice(3, -3).map((_, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setCurrentIndex(index + 3);
+                  setIsAutoScrolling(false);
+                }}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  index === currentIndex
+                    ? 'w-8 bg-gradient-to-r from-[#FF0080] to-[#00ff73]'
+                    : 'w-2 bg-white/30 hover:bg-white/50'
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Auto-scroll indicator */}
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={() => setIsAutoScrolling(!isAutoScrolling)}
+              className="text-sm text-gray-400 hover:text-white transition-colors duration-300"
+            >
+              {isAutoScrolling ? '⏸ Pausar' : '▶ Reanudar'} auto-scroll
+            </button>
+          </div>
         </div>
-      )}
-      
-      <div className="p-4">
-        <span className="inline-block px-3 py-1 text-xs text-white rounded-lg bg-[#E39F71] mb-2"> 
-          {product.tags || product.category}
-        </span>
-        <h3 className="text-lg font-semibold text-gray-800 mb-1 font-bold">{product.name}</h3>
-        <div className="text-lg font-semibold text-black cursor-auto my-3">
-          ${Number(product.price).toLocaleString('en-US')}
-        </div>
-        <button 
-          id="agregarAlCarrito"
-          style={{ backgroundImage: "linear-gradient(90deg,rgba(189, 157, 212, 1) 0%, rgba(125, 209, 199, 1) 99%)"}}
-          className="w-full py-2 px-4 text-white rounded-full hover:opacity-90 transition-opacity duration-300"
-          onClick={(e) => {
-            e.stopPropagation(); // Evitar que se active el click del card
-            handleAddToCart(product);
-          }}
-        >
-          Agregar al carrito
-        </button>
-      </div>
-    </div>
-  ))}
-</div>
         )}
-        
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-md w-full">
@@ -311,6 +587,28 @@ const logos = [
             </div>
           </div>
         )}
+        <div
+            id="texto-principal"
+            className="bg-animated h-[75vh]  flex flex-col justify-center items-center text-center text-white font-inter px-6 sm:px-8 md:px-12"
+          >
+            <img
+              src={logo}
+              alt="Buff Store"
+              className="w-44 md:w-52 lg:w-64 mb-8 drop-shadow-[0_0_25px_rgba(0,255,115,0.8)]"
+            />
+
+            <div className="flex flex-col items-center mt-6 space-y-6 w-full">
+              <h3 className="font-['Quantico'] font-bold text-gray-200 text-4xl leading-snug lg:leading-tight tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] max-w-[65ch]">
+                Una nueva forma de vivir la experiencia gamer.
+              </h3>
+
+              <p className="font-['Quantico'] text-gray-200  sm:text-1xl md:text-2xl lg:text-3xl leading-relaxed lg:leading-normal tracking-wide drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)] max-w-[80ch]">
+                Buff Store combina tecnología moderna, seguridad y un diseño intuitivo para ofrecerte una
+                experiencia rápida, confiable y sin complicaciones. Compra tus códigos de videojuegos con total
+                confianza y disfruta de soporte 24/7 para cualquier necesidad.
+              </p>
+            </div> 
+          </div> 
         
 
     </>

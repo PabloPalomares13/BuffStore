@@ -120,7 +120,7 @@ const Login = () => {
 };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-blue-600 to-purple-500">
+    <div className="flex min-h-screen bg-gradient-to-l from-[#00ff73] to-[#121212]">
       
       <div className="hidden lg:flex lg:w-1/2 flex-col justify-center px-16 text-white">
          <a href="/home" className=""> <img src={logo} alt="logo" className="w-100 rounded-2xl py-1 mb-6 bg-opacity-80 shadow-xl bg-white/20" /></a>

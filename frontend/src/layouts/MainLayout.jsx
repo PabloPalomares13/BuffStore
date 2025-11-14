@@ -7,7 +7,7 @@ import { Outlet } from 'react-router-dom';
 
 function MainLayout () {
   return (
-    <div className="min-h-screen bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${background})` }}>
+    <div className="bg-[#121212]">
       <Header />
       <main>
         <Outlet />
@@ -18,3 +18,5 @@ function MainLayout () {
 };
 
 export default MainLayout;
+
+

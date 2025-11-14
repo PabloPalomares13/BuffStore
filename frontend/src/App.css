@@ -4,17 +4,84 @@
 
 
 @theme {
-  --font-quantico: 'Quantico', sans-serif;
-  @keyframes logo-cloud {
+  @keyframes logo-cloud-left {
     from { transform: translateX(0); }
     to   { transform: translateX(calc(-100% - 4rem)); }
   }
-  --animate-logo-cloud: logo-cloud 30s linear infinite;
+
+  @keyframes logo-cloud-right {
+    from { transform: translateX(0); }
+    to   { transform: translateX(calc(100% + 4rem)); }
+  }
+
+  --animate-logo-cloud-left: logo-cloud-left 30s linear infinite;
+  --animate-logo-cloud-right: logo-cloud-right 30s linear infinite;
 }
 
 @layer utilities {
-  .animate-logo-cloud {
-    animation: var(--animate-logo-cloud);
+  .animate-logo-cloud-left {
+    animation: var(--animate-logo-cloud-left);
+  }
+
+  .animate-logo-cloud-right {
+    animation: var(--animate-logo-cloud-right);
   }
 }
+.bg-animated {
+  position: relative;
+  overflow: hidden;
+  /* Negro predominante con toques sutiles de color */
+  background: linear-gradient(
+    to bottom,
+    #001a0d 0%,      
+    #1a000f 100%  
+  );
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
+/* ✨ Capas con blur más intenso para transiciones naturales */
+.bg-animated::before,
+.bg-animated::after {
+  content: "";
+  position: absolute;
+  width: 200%;
+  height: 200%;
+  filter: blur(200px); /* Más blur para difuminar mejor */
+  opacity: 0.1; /* Más sutil */
+  mix-blend-mode: screen; /* Mezcla natural con el fondo */
+}
+
+/* Capa superior - Verde neón difuminado */
+.bg-animated::before {
+  top: -60%;
+  left: -50%;
+  background: 
+    radial-gradient(circle at 50% 20%, rgba(0, 255, 133, 0.25), transparent 50%),
+    radial-gradient(circle at 30% 10%, rgba(0, 255, 133, 0.15), transparent 60%);
+  animation: waveMove 5s ease-in-out infinite alternate;
+}
+
+/* Capa inferior - Rosa neón difuminado */
+.bg-animated::after {
+  bottom: -60%;
+  left: -50%;
+  background: 
+    radial-gradient(circle at 50% 80%, rgba(255, 0, 255, 0.25), transparent 50%),
+    radial-gradient(circle at 70% 90%, rgba(255, 0, 255, 0.15), transparent 60%);
+  animation: waveMove 10s ease-in-out infinite alternate-reverse;
+}
+
+/* 🌊 Movimiento suave tipo ola - más lento y sutil */
+@keyframes waveMove {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  50% {
+    transform: translate(8%, -5%) rotate(2deg);
+  }
+  100% {
+    transform: translate(-8%, 5%) rotate(-2deg);
+  }
+}

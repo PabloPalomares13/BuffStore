@@ -135,14 +135,14 @@ export default function Header() {
                                     <div className="absolute right-0 mt-2 w-48 bg-white/80 backdrop-blur-lg rounded-md shadow-lg py-1 border border-white/30 z-50">
                                         <a
                                             href="/checkout"
-                                            className="flex items-center px-4 py-2 text-sm text-gray-400 hover:bg-white/50 transition-colors"
+                                            className="flex items-center px-4 py-2 text-sm text-[#121212] hover:bg-white/50 transition-colors"
                                         >
                                             <span className="mr-2"><User size={16} /></span>
                                             Mi Carrito
                                         </a>
                                         <a
                                             href="/userprofile"
-                                            className="flex items-center px-4 py-2 text-sm text-gray-400 hover:bg-white/50 transition-colors"
+                                            className="flex items-center px-4 py-2 text-sm text-[#121212] hover:bg-white/50 transition-colors"
                                         >
                                             <span className="mr-2"><User size={16} /></span>
                                             Mi perfil
@@ -150,7 +150,7 @@ export default function Header() {
                                         {userRole === 'admin' && (
                                             <a
                                                 href="/dashboard"
-                                                className="flex items-center px-4 py-2 text-sm text-gray-400 hover:bg-white/50 transition-colors"
+                                                className="flex items-center px-4 py-2 text-sm text-[#121212] hover:bg-white/50 transition-colors"
                                             >
                                                 <span className="mr-2"><Settings size={16} /></span>
                                                 Dashboard
@@ -171,13 +171,13 @@ export default function Header() {
                             <div className="sm:flex hidden sm:gap-4">
                                 <a
                                             href="/Checkout"
-                                            className="flex items-center px-4 py-2 text-sm text-gray-400 hover:bg-white/50 transition-colors bg-white/70 rounded-md"
+                                            className="flex items-center px-4 py-2 text-sm text-gray-400 hover:bg-white/30 transition-colors bg-[#121212] rounded-md text-white"
                                         >
-                                            <span className="mr-2"><User size={16} /></span>
+                                            <span className="mr-2 text-white"><User size={16} /></span>
                                             Mi Carrito
                                         </a>
                                 <a
-                                    className="rounded-md bg-gradient-to-r from-teal-500 to-teal-700 px-5 py-2.5 text-sm font-medium text-white shadow hover:from-teal-600 hover:to-teal-700"
+                                    className="rounded-md bg-gradient-to-r from-[#FF0080] to-[#121212] px-5 py-2.5 text-sm font-medium text-white shadow hover:from-[#FF0080]/50 to-[#121212]/50 transition-all duration-1000 ease-in-out"
                                     href="/login"
                                 >
                                     Login
@@ -185,7 +185,7 @@ export default function Header() {
 
                                 <div className="hidden sm:flex">
                                     <a
-                                        className="rounded-md bg-gradient-to-r from-purple-600 to-purple-800 px-5 py-2.5 text-sm font-medium text-white hover:from-purple-700 hover:to-purple-900"
+                                        className="rounded-md bg-gradient-to-l from-[#00ff73] to-[#121212] px-5 py-2.5 text-sm font-medium text-white hover:from-[#00ff73]/50 to-[#121212]/50"
                                         href="/register"
                                     >
                                         Register
@@ -198,7 +198,7 @@ export default function Header() {
                         <div className="md:hidden">
                             <button
                                 onClick={toggleMenu}
-                                className="rounded-md bg-gray-800 p-2 text-gray-200 transition hover:text-teal-400"
+                                className="rounded-md bg-[#121212] p-2 text-white transition hover:text-teal-400"
                             >
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -217,31 +217,31 @@ export default function Header() {
                             <div className="md:hidden lg:hidden">
                                 <nav className="mt-9.25 space-y-2 pb-6 absolute right-3 bg-white/80 p-10 rounded-lg flex flex-col text-center">
                                     <a
-                                        className="rounded-lg hover:bg-white/40 text-sm font-medium text-gray-800 px-4 py-2 transition-all duration-600 ease-in-out"
+                                        className="rounded-lg bg-white/30 text-sm font-medium text-[#121212] px-4 py-2 transition-all duration-600 ease-in-out shadow-lg"
                                         href="/Dashboard"
                                     >
                                         Nosotros
                                     </a>
                                     <a
-                                        className="rounded-lg hover:bg-white/40 text-sm font-medium text-gray-800 px-4 py-2 transition-all duration-600 ease-in-out"
+                                        className="rounded-lg bg-white/30 text-sm font-medium text-[#121212] px-4 py-2 transition-all duration-600 ease-in-out shadow-lg"
                                         href="#"
                                     >
                                         Historia
                                     </a>
                                     <a
-                                        className="rounded-lg hover:bg-white/40 text-sm font-medium text-gray-800 px-4 py-2 transition-all duration-600 ease-in-out"
+                                        className="rounded-lg bg-white/30 text-sm font-medium text-[#121212] px-4 py-2 transition-all duration-600 ease-in-out shadow-lg"
                                         href="#"
                                     >
                                         Servicios
                                     </a>
                                     <a
-                                        className="rounded-lg hover:bg-white/40 text-sm font-medium text-gray-800 px-4 py-2 transition-all duration-600 ease-in-out"
+                                        className="rounded-lg bg-white/30 text-sm font-medium text-[#121212] px-4 py-2 transition-all duration-600 ease-in-out shadow-lg"
                                         href="#"
                                     >
                                         Comunidad
                                     </a>
                                     <a
-                                        className="rounded-lg hover:bg-white/40 text-sm font-medium text-gray-800 px-4 py-2 transition-all duration-600 ease-in-out"
+                                        className="rounded-lg bg-white/30 text-sm font-medium text-[#121212] px-4 py-2 transition-all duration-600 ease-in-out shadow-lg"
                                         href="#"
                                     >
                                         Blog
@@ -273,23 +273,23 @@ export default function Header() {
                                     ) : (
                                         <div className="mt-5 space-y-3">
                                             <a
-                                                className="min-sm:hidden mr-1 rounded-md bg-gradient-to-r from-teal-500 to-teal-600 px-5 py-2.5 text-center text-sm font-medium text-white shadow hover:from-teal-600 hover:to-teal-700 transition-all duration-600 ease-in-out"
+                                                className="min-sm:hidden mr-1 rounded-md bg-gradient-to-r from-[#FF0080] to-[#121212] px-5 py-2.5 text-center text-sm font-medium text-white shadow transition-all duration-600 ease-in-out"
                                                 href="/login"
                                             >
                                                 Login
                                             </a>
                                             
                                             <a
-                                                className="min-sm:hidden ml-1 rounded-md bg-gradient-to-r from-purple-600 to-purple-800 px-5 py-2.5 text-center text-sm font-medium text-white hover:from-purple-700 hover:to-purple-900 transition-all duration-600 ease-in-out"
+                                                className="min-sm:hidden ml-1 rounded-md bg-gradient-to-l from-[#00ff75] to-[#121212] px-5 py-2.5 text-center text-sm font-medium text-white transition-all duration-600 ease-in-out"
                                                 href="/register"
                                             >
                                                 Register
                                             </a>
                                             <a
                                             href="/Checkout"
-                                            className="flex items-center px-4 text-sm text-gray-700 hover:bg-white/50 transition-colors bg-white/70 rounded-md mt-6 py-3"
+                                            className="flex items-center px-4 text-sm text-gray-700 transition-colors bg-[#121212] rounded-md mt-6 py-3 text-white justify-center"
                                         >
-                                            <span className="mr-2"><User size={16} /></span>
+                                            <span className="mr-2 text-white"><User size={16} /></span>
                                             Mi Carrito
                                         </a>
                                         </div>

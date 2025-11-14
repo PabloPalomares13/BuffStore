@@ -46,7 +46,7 @@ const DashboardLayout = ({ children }) => {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-blue-100 to-pink-100">
+    <div className="flex h-screen bg-gradient-to-br from-[#FF0080]/20 to-[#00ff75]/20">
       {/* Sidebar Componente */}
       <Sidebar isOpen={isSidebarOpen} />
 
