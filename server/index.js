@@ -1,4 +1,6 @@
 require('dotenv').config();
+
+const { configureMercadoPago } = require('./config/mercadopagoConfig');
 const express = require('express');
 const mongoose = require('mongoose');
 const productRoutes = require('./routes/productRoutes');
@@ -7,6 +9,7 @@ const orderRoutes = require('./routes/orderRoutes');
 const geminiRoutes = require('./routes/geminiRoutes');
 const gameCodeRoutes = require("./routes/gameCodesRoutes");
 const videoRoutes = require('./routes/videoRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 const path = require('path');
 const cors = require('cors');
 
@@ -51,6 +54,13 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+try {
+  configureMercadoPago();
+} catch (error) {
+  console.error('⚠️ Error al configurar Mercado Pago:', error.message);
+  console.log('⚠️ La aplicación continuará, pero los pagos no funcionarán');
+}
+
 // Routes
 app.use('/api/products', productRoutes);
 app.use('/api/auth', authRoutes);
@@ -58,6 +68,14 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/gemini', geminiRoutes);
 app.use("/api/codes", gameCodeRoutes);
 app.use('/api/videos', videoRoutes);
+app.use('/api/payments', paymentRoutes);
+
+app.get('/', (req, res) => {
+  res.json({ 
+    message: 'API funcionando',
+    mercadoPagoEnabled: !!process.env.MP_ACCESS_TOKEN 
+  });
+});
 
 // Conectar a MongoDB
 mongoose.connect(process.env.MONGO_URI)
@@ -75,4 +93,5 @@ app.get('/api/test', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`GCS Bucket: ${process.env.GCS_BUCKET_NAME}`);
+  console.log(`💳 Mercado Pago: ${process.env.MP_ACCESS_TOKEN ? 'Configurado ✅' : 'No configurado ⚠️'}`);
 });
