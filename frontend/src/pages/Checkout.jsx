@@ -1,19 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-
+import MercadoPagoCheckout from '../components/MercadoPagoCheckout';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const link = import.meta.env.PROD 
   ? import.meta.env.VITE_BACKEND_URL
   : 'http://localhost:3000'
 const Checkout = () => {
   // Estados para carrito y datos de formulario
+  const [order, setOrder] = useState(null);
   const [cart, setCart] = useState([]);
   const [subtotal, setSubtotal] = useState(0);
   const [taxes, setTaxes] = useState(0);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
+  const [step, setStep] = useState(1);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   // Estados para formulario
   const [formData, setFormData] = useState({
     // Datos personales
@@ -112,6 +117,49 @@ const Checkout = () => {
     setTotal(newSubtotal + newTaxes);
   }, [cart]);
 
+  useEffect(() => {
+  // Verificar si viene de una redirección de Mercado Pago
+  const paymentStatus = searchParams.get('status');
+  const paymentId = searchParams.get('payment_id');
+  const orderId = searchParams.get('external_reference');
+
+  if (paymentStatus && paymentId) {
+    handlePaymentReturn(paymentStatus, paymentId, orderId);
+  }
+}, [searchParams]);
+
+// ⬇️ AGREGAR ESTA FUNCIÓN
+const handlePaymentReturn = async (status, paymentId, orderId) => {
+  if (status === 'approved') {
+    localStorage.removeItem('cart');
+    setAlert({
+      show: true,
+      type: 'success',
+      message: '✅ ¡Pago aprobado! Tus productos digitales están disponibles.'
+    });
+    setStep(3);
+    
+    setTimeout(() => {
+      navigate('/Userprofile');
+    }, 3000);
+    
+  } else if (status === 'pending') {
+    setAlert({
+      show: true,
+      type: 'warning',
+      message: '⏳ Tu pago está pendiente de confirmación.'
+    });
+    
+  } else {
+    setAlert({
+      show: true,
+      type: 'error',
+      message: '❌ El pago fue rechazado. Intenta con otro método.'
+    });
+    setStep(2);
+  }
+};
+
   // Manejar cambios en el formulario (sin cambios aquí)
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -182,407 +230,378 @@ const Checkout = () => {
 
   // Procesar el pago
   const handleSubmit = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      // Crear objeto con la información de la venta
-      const orderData = {
-        products: cart.map(item => ({
-          productId: item._id,
-          name: item.name,
-          price: item.price,
-          quantity: item.quantity,
-          taxRate: item.taxRate || 0.08
-        })),
-        customer: {
-          fullName: formData.fullName,
-          email: formData.email,
-          phone: formData.phone
-        },
-        shipping: {
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          zipCode: formData.zipCode
-        },
-        payment: {
-          cardName: formData.cardName,
+    // Crear objeto con la información de la orden
+    const orderData = {
+      products: cart.map(item => ({
+        productId: item._id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        taxRate: item.taxRate || 0.08
+      })),
+      customer: {
+        fullName: formData.fullName,
+        email: formData.email,
+        phone: formData.phone
+      },
+      shipping: {
+        address: formData.address,
+        city: formData.city,
+        state: formData.state,
+        zipCode: formData.zipCode
+      },
+      totals: {
+        subtotal,
+        taxes,
+        total
+      }
+    };
 
-          cardLast4: formData.cardNumber.slice(-4)
-        },
-        totals: {
-          subtotal,
-          taxes,
-          total
-        }
-      };
-      //const response = await axios.post(`${link}/api/orders`, orderData);
-      const token = localStorage.getItem('userToken'); // ✅ Obtiene el token guardado al hacer login
+    const token = localStorage.getItem('userToken');
 
-      const response = await axios.post(`${link}/api/orders`, orderData, {
-        headers: {
-          'Authorization': `Bearer ${token}`, // ✅ Agregamos el token
-          'Content-Type': 'application/json'
-        }
-      });
+    // Crear la orden en el backend
+    const response = await axios.post(`${link}/api/orders`, orderData, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
 
-      if (response.status === 201) {
-        const codes = response.data.codes;
-        setAlert({
+    if (response.status === 201) {
+      // Guardar la orden y pasar al paso 2 (pago)
+      setOrder(response.data.order);
+      setStep(2); // ✅ Cambiar a paso de pago con Mercado Pago
+      
+      setAlert({
         show: true,
         type: 'success',
-        message: `✅ Compra completada. Tus códigos: ${codes.map(c => `${c.product}: ${c.code}`).join(', ')}`
-        });
-        localStorage.removeItem('cart');
-
-        setTimeout(() => {
-        window.location.href = '/Userprofile';
-      }, 5000);
-
-      } else {
-        throw new Error('Error al crear la orden');
-      }
-
-    } catch (err) {
-      console.error('Error al procesar el pago:', err);
-      alert('Hubo un error al procesar el pago. Por favor intente nuevamente.');
-    } finally {
-      setLoading(false);
+        message: '✅ Orden creada. Procede al pago.'
+      });
+    } else {
+      throw new Error('Error al crear la orden');
     }
-  };
-  {alert.show && (
-  <div
-    className={`fixed bottom-6 right-6 px-5 py-3 rounded-lg shadow-lg text-white transition-all duration-300 ${
-      alert.type === 'success' ? 'bg-green-600' : 'bg-red-500'
-    }`}
-  >
-    {alert.message}
-  </div>
-  )}
+
+  } catch (err) {
+    console.log(err.response?.data);
+    console.error('Error al procesar la orden:', err);
+    setAlert({
+      show: true,
+      type: 'error',
+      message: 'Hubo un error al crear la orden. Por favor intenta nuevamente.'
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handlePaymentSuccess = (payment) => {
+  console.log('Pago exitoso:', payment);
+  localStorage.removeItem('cart');
+  setStep(3);
+  
+  setAlert({
+    show: true,
+    type: 'success',
+    message: '✅ ¡Pago completado exitosamente!'
+  });
+  
+  setTimeout(() => {
+    navigate('/Userprofile');
+  }, 3000);
+};
+
+const handlePaymentError = (error) => {
+  console.error('Error en el pago:', error);
+  setAlert({
+    show: true,
+    type: 'error',
+    message: 'Hubo un error al procesar tu pago. Por favor intenta de nuevo.'
+  });
+};
+
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 pt-28">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Mi carrito de compras 🛒</h1>
-          <p className="mt-2 text-gray-600">Completa tu compra</p>
-        </div>
-        
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>
-          </div>
-        ) : cart.length === 0 ? (
-          <div className="bg-white rounded-lg shadow-md p-6 text-center">
-            <h2 className="text-xl font-semibold mb-4">Tu carrito está vacío</h2>
-            <p className="mb-6">No tienes productos en tu carrito de compras.</p>
-            <Link 
-              to="/"
-              className="px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              Volver a la tienda
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Columna izquierda: Productos */}
-            <div className="lg:col-span-2">
-              <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                <h2 className="text-xl font-semibold mb-4">Productos seleccionados</h2>
-                
-                {cart.map(product => (
-                  <div key={product._id} className="flex items-center border-b py-4 last:border-b-0">
-                    <div className="w-20 h-20 flex-shrink-0">
-                      {product.displayImageUrl && (
-                        <img 
-                          src={product.displayImageUrl} 
-                          alt={product.name} 
-                          className="w-full h-full object-cover rounded-md" 
-                        />
-                      )}
-                    </div>
-                    
-                    <div className="ml-4 flex-grow">
-                      <h3 className="font-medium text-gray-800">{product.name}</h3>
-                      <p className="text-gray-600 text-sm">Precio: ${product.price.toFixed(2)}</p>
-                      
-                      <div className="flex items-center mt-2">
-                        <button 
-                          onClick={() => decrementQuantity(product._id)}
-                          className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-l-md border border-gray-300"
-                        >
-                          -
-                        </button>
-                        <span className="w-10 h-8 flex items-center justify-center border-t border-b border-gray-300">
-                          {product.quantity}
-                        </span>
-                        <button 
-                          onClick={() => incrementQuantity(product._id)}
-                          className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-r-md border border-gray-300"
-                          disabled={product.quantity >= product.stock}
-                        >
-                          +
-                        </button>
-                        <span className="ml-2 text-sm text-gray-500">
-                          ({product.stock} disponibles)
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="ml-4">
-                      <p className="font-medium text-gray-800">${(product.price * product.quantity).toFixed(2)}</p>
-                      <button 
-                        onClick={() => removeProduct(product._id)}
-                        className="text-red-500 text-sm mt-2 hover:text-red-700"
-                      >
-                        Eliminar
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Formulario de checkout */}
-              <form onSubmit={handleSubmit}>
-                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                  <h2 className="text-xl font-semibold mb-4">Información personal</h2>
-                  
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-1">
-                        Nombre completo
-                      </label>
-                      <input
-                        type="text"
-                        id="fullName"
-                        name="fullName"
-                        value={formData.fullName}
-                        onChange={handleInputChange}
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                        Correo electrónico
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        name="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                        Teléfono
-                      </label>
-                      <input
-                        type="tel"
-                        id="phone"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                  <h2 className="text-xl font-semibold mb-4">Dirección de facturación</h2>
-                  
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
-                        Dirección
-                      </label>
-                      <input
-                        type="text"
-                        id="address"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
-                          Ciudad
-                        </label>
-                        <input
-                          type="text"
-                          id="city"
-                          name="city"
-                          value={formData.city}
-                          onChange={handleInputChange}
-                          className="w-full p-2 border border-gray-300 rounded-md"
-                          required
-                        />
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
-                          Departamento/Estado
-                        </label>
-                        <input
-                          type="text"
-                          id="state"
-                          name="state"
-                          value={formData.state}
-                          onChange={handleInputChange}
-                          className="w-full p-2 border border-gray-300 rounded-md"
-                          required
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="zipCode" className="block text-sm font-medium text-gray-700 mb-1">
-                        Código postal
-                      </label>
-                      <input
-                        type="text"
-                        id="zipCode"
-                        name="zipCode"
-                        value={formData.zipCode}
-                        onChange={handleInputChange}
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        required
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-                  <h2 className="text-xl font-semibold mb-4">Detalles de pago</h2>
-                  
-                  <div className="grid grid-cols-1 gap-4">
-                    <div>
-                      <label htmlFor="cardName" className="block text-sm font-medium text-gray-700 mb-1">
-                        Nombre en la tarjeta
-                      </label>
-                      <input
-                        type="text"
-                        id="cardName"
-                        name="cardName"
-                        value={formData.cardName}
-                        onChange={handleInputChange}
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        required
-                      />
-                    </div>
-                    
-                    <div>
-                      <label htmlFor="cardNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                        Número de tarjeta
-                      </label>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        id="cardNumber"
-                        name="cardNumber"
-                        value={formData.cardNumber}
-                        onChange={handleInputChange}
-                        className="w-full p-2 border border-gray-300 rounded-md"
-                        placeholder="1234 5678 9012 3456"
-                        required
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label htmlFor="expiryDate" className="block text-sm font-medium text-gray-700 mb-1">
-                          Fecha de expiración (MM/YY)
-                        </label>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          id="expiryDate"
-                          name="expiryDate"
-                          value={formData.expiryDate}
-                          onChange={handleInputChange}
-                          className="w-full p-2 border border-gray-300 rounded-md"
-                          placeholder="MM/YY"
-                          required
-                        />
-                      </div>
-                      
-                      <div>
-                        <label htmlFor="cvc" className="block text-sm font-medium text-gray-700 mb-1">
-                          CVC
-                        </label>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          id="cvc"
-                          name="cvc"
-                          value={formData.cvc}
-                          onChange={handleInputChange}
-                          className="w-full p-2 border border-gray-300 rounded-md"
-                          placeholder="123"
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </form>
+    <div className="max-w-6xl mx-auto px-4">
+      
+      {/* ⬇️ AGREGAR: Indicador de pasos */}
+      <div className="mb-8">
+        <div className="flex items-center justify-center">
+          {/* Paso 1 */}
+          <div className={`flex items-center ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 
+              ${step >= 1 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300'}`}>
+              1
             </div>
-            
-            {/* Columna derecha: Resumen */}
-            <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
-                <h2 className="text-xl font-semibold mb-4">Resumen de la orden</h2>
-                
-                <div className="space-y-4">
-                  <div className="flex justify-between border-b pb-4">
-                    <span className="text-gray-600">Subtotal</span>
-                    <span className="font-medium">${Number(subtotal).toLocaleString('en-US')}</span>
-                  </div>
-                  
-                  <div className="flex justify-between border-b pb-4">
-                    <span className="text-gray-600">Impuestos</span>
-                    <span className="font-medium">${Number(taxes).toLocaleString('en-US')}</span>
-                  </div>
-                  
-                  <div className="flex justify-between">
-                    <span className="text-lg font-semibold">Total</span>
-                    <span className="text-lg font-semibold">${Number(total).toLocaleString('en-US')}</span>
-                  </div>
+            <span className="ml-2 font-medium hidden sm:inline">Resumen</span>
+          </div>
+
+          {/* Línea conectora */}
+          <div className={`w-24 h-1 mx-4 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`} />
+
+          {/* Paso 2 */}
+          <div className={`flex items-center ${step >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 
+              ${step >= 2 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300'}`}>
+              2
+            </div>
+            <span className="ml-2 font-medium hidden sm:inline">Pago</span>
+          </div>
+
+          {/* Línea conectora */}
+          <div className={`w-24 h-1 mx-4 ${step >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`} />
+
+          {/* Paso 3 */}
+          <div className={`flex items-center ${step >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 
+              ${step >= 3 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300'}`}>
+              3
+            </div>
+            <span className="ml-2 font-medium hidden sm:inline">Confirmación</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        {/* Columna principal */}
+        <div className="lg:col-span-2">
+          
+          {/* ⬇️ PASO 1: Resumen y formulario (tu código actual) */}
+          {step === 1 && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-2xl font-bold mb-6">Resumen del pedido</h2>
+
+            <div className="space-y-4 mb-6">
+              {cart.map((item) => (
+                <div
+                  key={item._id}
+                  className="flex items-center gap-4 border-b pb-4"
+                >
+              {item.displayImageUrl && (
+                <img
+                  src={item.displayImageUrl}
+                  alt={item.name}
+                  className="w-20 h-20 object-cover rounded"
+                />
+              )}
+
+              {/* Info del producto */}
+              <div className="flex-1">
+                <h3 className="font-semibold">{item.name}</h3>
+
+                {/* Controles de cantidad */}
+                <div className="flex items-center mt-2">
+                  <button
+                    onClick={() => decrementQuantity(item._id)}
+                    className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-l-md border border-gray-300"
+                  >
+                    -
+                  </button>
+
+                  <span className="w-10 h-8 flex items-center justify-center border-t border-b border-gray-300">
+                    {item.quantity}
+                  </span>
+
+                  <button
+                    onClick={() => incrementQuantity(item._id)}
+                    className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-r-md border border-gray-300"
+                    disabled={item.quantity >= item.stock}
+                  >
+                    +
+                  </button>
+
+                  <span className="ml-2 text-sm text-gray-500">
+                    ({item.stock} disponibles)
+                  </span>
                 </div>
-                
+              </div>
+
+              {/* Precio y eliminar */}
+              <div className="text-right">
+                <p className="font-semibold">
+                  ${(item.price * item.quantity).toLocaleString("es-CO")}
+                </p>
+                <p className="text-sm text-gray-600">
+                  ${item.price.toLocaleString("es-CO")} c/u
+                </p>
+
+                <button
+                  onClick={() => removeProduct(item._id)}
+                  className="text-red-500 text-sm mt-2 hover:text-red-700"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+              {/* Tu formulario actual - QUITAR campos de tarjeta */}
+              <form onSubmit={handleSubmit}>
+                <h3 className="text-lg font-semibold mb-4">Información de contacto</h3>
+                <div className="space-y-4">
+                  <input
+                    type="text"
+                    name="fullName"
+                    placeholder="Nombre completo"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                  <input
+                    type="tel"
+                    name="phone"
+                    placeholder="Teléfono"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    required
+                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+
                 <button
                   type="submit"
-                  onClick={handleSubmit}
-                  style={{ backgroundImage: "linear-gradient(90deg,rgba(189, 157, 212, 1) 0%, rgba(125, 209, 199, 1) 99%)"}}
-                  className="w-full mt-6 py-3 px-4 text-white rounded-lg hover:opacity-90 transition-opacity duration-300 font-medium"
+                  disabled={loading || cart.length === 0}
+                  className="w-full mt-6 bg-blue-600 text-white py-3 rounded-lg font-semibold
+                    hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
                 >
-                  Confirmar compra
+                  {loading ? 'Procesando...' : 'Continuar al pago'}
                 </button>
-                
-                <div className="mt-4 text-center">
-                  <Link to="/" className="text-indigo-600 hover:text-indigo-800 text-sm">
-                    Seguir comprando
-                  </Link>
+              </form>
+            </div>
+          )}
+
+          {/* ⬇️ PASO 2: Pago con Mercado Pago - AGREGAR COMPLETO */}
+          {step === 2 && order && (
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-2xl font-bold mb-6">Realizar pago</h2>
+              
+              <div className="mb-6">
+                <p className="text-gray-600 mb-2">
+                  Orden: <span className="font-semibold">#{order._id?.slice(-8)}</span>
+                </p>
+                <p className="text-2xl font-bold text-blue-600">
+                  Total: ${total.toLocaleString('es-CO')} COP
+                </p>
+              </div>
+
+              {/* ⬇️ COMPONENTE DE MERCADO PAGO */}
+              <MercadoPagoCheckout
+                orderId={order._id}
+                onSuccess={handlePaymentSuccess}
+                onError={handlePaymentError}
+              />
+
+              <button
+                onClick={() => setStep(1)}
+                className="w-full mt-4 border border-gray-300 text-gray-700 py-2 rounded-lg
+                  hover:bg-gray-50 transition"
+              >
+                ← Volver al resumen
+              </button>
+            </div>
+          )}
+
+          {/* ⬇️ PASO 3: Confirmación - AGREGAR COMPLETO */}
+          {step === 3 && (
+            <div className="bg-white rounded-lg shadow-md p-8 text-center">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h2 className="text-3xl font-bold text-green-600 mb-4">¡Pago exitoso!</h2>
+              <p className="text-gray-600 mb-6">
+                Tu pedido ha sido procesado correctamente. 
+                <br />
+                Los códigos de tus juegos están disponibles en tu perfil.
+              </p>
+              <button
+                onClick={() => navigate('/Userprofile')}
+                className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold
+                  hover:bg-blue-700 transition"
+              >
+                Ver mis productos
+              </button>
+            </div>
+          )}
+
+        </div>
+
+        {/* ⬇️ Columna lateral - tu código actual de resumen */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
+            <h3 className="text-xl font-bold mb-4">Resumen de compra</h3>
+            
+            <div className="space-y-2 mb-4">
+              <div className="flex justify-between text-gray-600">
+                <span>Subtotal</span>
+                <span>${subtotal.toLocaleString('es-CO')}</span>
+              </div>
+              <div className="flex justify-between text-gray-600">
+                <span>Impuestos</span>
+                <span className="font-medium">${taxes.toLocaleString('es-CO')}</span>
+              </div>
+              <div className="border-t pt-2 mt-2">
+                <div className="flex justify-between text-xl font-bold">
+                  <span>Total</span>
+                  <span className="text-blue-600">
+                    ${total.toLocaleString('es-CO')} COP
+                  </span>
                 </div>
               </div>
             </div>
+
+            <div className="text-sm text-gray-500 mb-4">
+              <p className="flex items-center gap-2 mb-2">
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Entrega inmediata
+              </p>
+              <p className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                Pago 100% seguro
+              </p>
+            </div>
           </div>
-        )}
+        </div>
+
       </div>
+
+      {/* ⬇️ Alerta - tu código actual */}
+      {alert.show && (
+        <div
+          className={`fixed bottom-6 right-6 px-5 py-3 rounded-lg shadow-lg text-white transition-all duration-300 ${
+            alert.type === 'success' ? 'bg-green-600' : 
+            alert.type === 'warning' ? 'bg-yellow-600' :
+            'bg-red-500'
+          }`}
+        >
+          {alert.message}
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
 };
 
 export default Checkout;

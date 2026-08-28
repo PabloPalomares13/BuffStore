@@ -14,6 +14,7 @@ const ProductDetail = () => {
   const [quantity, setQuantity] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [previewMedia, setPreviewMedia] = useState(null);
+  const [activeTab, setActiveTab] = useState('description');
 
   const link = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
 
@@ -114,6 +115,19 @@ const ProductDetail = () => {
     localStorage.setItem('cart', JSON.stringify(currentCart));
     setShowModal(true);
   };
+
+  const increaseQty = () => {
+    if (quantity < Math.min(product?.stock || 0, 10)) {
+      setQuantity(quantity + 1);
+    }
+  };
+
+  const decreaseQty = () => {
+    if (quantity > 1) {
+      setQuantity(quantity - 1);
+    }
+  };  
+
   const nextMedia = () => {
   const newIndex = (selectedMediaIndex + 1) % product.media.length;
   setSelectedMediaIndex(newIndex);
@@ -141,20 +155,14 @@ const ProductDetail = () => {
     }
 
     const currentMedia = product.media[selectedMediaIndex];
-    /*
-    if (currentMedia.processing) {
-      return (
-        <div className="w-full h-96 bg-gray-900 rounded-lg flex flex-col items-center justify-center text-white">
-          <Loader2 className="w-12 h-12 animate-spin mb-4" />
-          <p>Procesando video...</p>
-        </div>
-      );
-    }
-    */
+
     if (currentMedia.type === 'video') {
       return (
         <video
           key={currentMedia.url}
+          autoPlay
+          loop
+          playsInline
           controls
           onClick={() => setPreviewMedia({ type: 'video', url: currentMedia.url, thumbnail: currentMedia.thumbnail })}
           className="w-full h-96 rounded-lg object-cover"
@@ -221,232 +229,411 @@ const ProductDetail = () => {
       </div>
     );
   }
-  function formatDescription(html) {
-  // Paso 1: Normalizar subtítulos h2 y h3 → añadir clases Tailwind
-  let formatted = html
-    .replace(
-      /<h2>/gi,
-      '<h2 class="text-2xl mt-6 mb-2 text-black ">'
-    )
-    .replace(/<\/h2>/gi, "</h2>")
-    .replace(
-      /<h3>/gi,
-      '<h3 class="text-2xl mt-6 mb-2 text-black ">'
-    )
-    .replace(/<\/h3>/gi, "</h3>");
-
-  // Paso 2: Detectar subtítulos cortos en <p> y convertirlos a h3 estilizados
-  formatted = formatted.replace(
-    /<p>([^<]{1,20})<\/p>/gi,
-    '<h3 class="text-2xl  mt-6 mb-2 text-black">$1</h3>'
-  );
-
-  return formatted;
-}
 
   return (
-    <div className="min-h-screen bg-transparent py-8 pt-24">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+    <>
+      {/* Agregar fuente Outfit al index.html o App.js */}
+      <style>{`
+        'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap'
         
-        {/* Breadcrumb */}
-        <nav className="mb-8">
-          <button 
-            onClick={() => navigate('/')}
-            className="bg-[#FF0099] text-white font-medium text-1xl shadow-lg shadow-[#FF0099]/30 hover:shadow-[#FF0099]/50 rounded-lg px-4 py-2"
-          >
-            ← Volver a productos
-          </button>
-        </nav>
+        @keyframes rotate-bg {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.5; transform: scale(1); }
+          50% { opacity: 1; transform: scale(1.1); }
+        }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(30px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        
+        .animate-pulse-slow {
+          animation: pulse-slow 4s ease-in-out infinite;
+        }
+        
+        .animate-fadeIn {
+          animation: fadeIn 0.6s ease;
+        }
+        
+        .animate-slideInRight {
+          animation: slideInRight 0.6s ease;
+        }
+        
+        .font-outfit {
+          font-family: 'Outfit', sans-serif;
+        }
+        
+        .font-space-mono {
+          font-family: 'Space Mono', monospace;
+        }
+      `}</style>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="min-h-screen bg-gradient-to-br from-[#0a0e1a] via-[#141824] to-[#0f1419] py-8 pt-24 relative overflow-x-hidden font-outfit">
+        {/* Fondo animado */}
+        <div className="fixed top-[-50%] left-[-50%] w-[200%] h-[200%] pointer-events-none z-0" style={{
+          background: 'radial-gradient(circle at 20% 80%, rgba(255, 0, 85, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(0, 217, 255, 0.1) 0%, transparent 50%)',
+          animation: 'rotate-bg 30s linear infinite'
+        }} />
+
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           
-          {/* Galería de imágenes */}
-          <div>
-          <div className="relative">
-            {renderMedia()}
+          {/* Botón de regreso mejorado */}
+          <nav className="mb-8">
+            <button 
+              onClick={() => navigate('/')}
+              className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-md border border-white/10 text-white font-medium rounded-full px-6 py-3 transition-all duration-300 hover:bg-white/10 hover:transform hover:-translate-x-1 hover:border-[#ff0055]"
+            >
+              ← Volver a productos
+            </button>
+          </nav>
+
+          <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-6 animate-fadeIn">
             
-            {product.media && product.media.length > 1 && (
-              <>
-                <button
-                  onClick={prevMedia}
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70"
-                >
-                  <ChevronLeft className="w-6 h-6" />
-                </button>
-                <button
-                  onClick={nextMedia}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70"
-                >
-                  <ChevronRight className="w-6 h-6" />
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Miniaturas */}
-          {product.media && product.media.length > 1 && (
-            <div className="flex gap-2 mt-4 overflow-x-auto">
-              {product.media.map((media, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedMediaIndex(index)}
-                  className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 ${
-                    selectedMediaIndex === index ? 'border-blue-500' : 'border-gray-300'
-                  }`}
-                >
-                  {media.type === 'video' ? (
-                    media.thumbnail ? (
-                      <img 
-                        src={media.thumbnail} 
-                        alt="Video" 
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                          e.target.nextSibling.style.display = 'flex';
-                        }}
-                      />
-                    ) : null
-                  ) : (
-                    <img src={media.url} alt={`Media ${index}`} className="w-full h-full object-cover" />
+            {/* Galería de imágenes */}
+            <div className="space-y-5">
+              {/* Imagen principal */}
+              <div className="relative">
+                <div className="bg-gradient-to-br from-[#141824] to-[#1e2433] border border-white/10 rounded-3xl p-4 shadow-2xl">
+                  {renderMedia()}
+                  
+                  {/* Flechas de navegación */}
+                  {product.media && product.media.length > 1 && (
+                    <>
+                      <button
+                        onClick={prevMedia}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 backdrop-blur-md border border-white/10 text-white p-3 rounded-full hover:bg-[#ff0055] hover:border-[#ff0055] transition-all duration-300 hover:scale-110 z-30"
+                      >
+                        <ChevronLeft className="w-6 h-6" />
+                      </button>
+                      <button
+                        onClick={nextMedia}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 backdrop-blur-md border border-white/10 text-white p-3 rounded-full hover:bg-[#ff0055] hover:border-[#ff0055] transition-all duration-300 hover:scale-110 z-30"
+                      >
+                        <ChevronRight className="w-6 h-6" />
+                      </button>
+                    </>
                   )}
-                  {media.type === 'video' && !media.thumbnail && (
-                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                      <Video className="w-6 h-6 text-gray-400" />
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-          {/* Información del producto */}
-          <div className="space-y-6 bg-white/65 backdrop-blur-xl p-6 rounded-2xl border border-white/25 shadow-xl ring-1 ring-white/10">
-
-            
-            {/* Título y precio */}
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {product.name}
-              </h1>
-              
-              {product.category && (
-                <span className="inline-block px-3 py-1 text-sm text-white rounded-lg bg-[#FF0099] mb-4 shadow-lg shadow-[#FF0099]/30 hover:shadow-[#FF0099]/50">
-                  {product.category}
-                </span>
-              )}
-              
-              <div className="text-3xl font-bold text-[#00FF66]/70 mb-4">
-                ${Number(product.price).toLocaleString('en-US')}
+                </div>
               </div>
-              
-              {product.stock > 0 ? (
-                <p className="text-[#00FF66] font-medium">
-                  ✓ En stock ({product.stock} disponibles)
-                </p>
-              ) : (
-                <p className="text-red-600 font-medium">
-                  ✗ Agotado
-                </p>
+
+              {/* Miniaturas */}
+              {product.media && product.media.length > 1 && (
+                <div className="grid grid-cols-4 gap-3">
+                  {product.media.map((media, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedMediaIndex(index)}
+                      className={`aspect-video rounded-xl overflow-hidden border-2 transition-all duration-300 bg-[#1e2433] hover:-translate-y-1 ${
+                        selectedMediaIndex === index 
+                          ? 'border-[#ff0055] shadow-lg shadow-[#ff0055]/50' 
+                          : 'border-transparent hover:border-[#ff0055]'
+                      }`}
+                    >
+                      {media.type === 'video' ? (
+                        <video
+                          src={media.url}
+                          muted
+                          loop
+                          playsInline
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <img 
+                          src={media.url} 
+                          alt={`Thumbnail ${index + 1}`}
+                          className="w-full h-full object-cover" 
+                        />
+                      )}
+                    </button>
+                  ))}
+                </div>
               )}
-            </div>
-
-            {/* Descripción */}
-            {product.description && (
-              <div>
-                <h3 className="text-2xl mb-2">Descripción</h3>
-                <div className="prose max-w-none dark:prose-invert">
-                    <div
-                        dangerouslySetInnerHTML={{
-                        __html: formatDescription(product.description),
-                        }}
-                    />
-                    </div>
+              {/* Features Grid */}
+              <div className="grid grid-cols-2 gap-4 text-white">
+                {[
+                  { icon: '⚡', title: 'Entrega Instantánea', text: 'Código digital en segundos' },
+                  { icon: '🔒', title: '100% Seguro', text: 'Compra protegida' },
+                  { icon: '💎', title: 'Original', text: 'Códigos oficiales' },
+                  { icon: '🎁', title: 'Bonus incluidos', text: 'Contenido exclusivo' }
+                ].map((feature, idx) => (
+                  <div 
+                    key={idx}
+                    className="bg-white/3 backdrop-blur-sm border border-white/10 rounded-2xl p-5 transition-all duration-300 hover:bg-white/6 hover:border-[#ff0055] hover:-translate-y-1"
+                  >
+                    <span className="text-3xl block mb-2">{feature.icon}</span>
+                    <div className="font-semibold text-sm mb-1">{feature.title}</div>
+                    <div className="text-gray-400 text-xs">{feature.text}</div>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
+              
+            {/* Información del producto */}
+            <div className="space-y-6 animate-slideInRight">
+              
+              {/* Header del producto */}
+              <div className="bg-gradient-to-br from-[#ff0055]/10 to-[#00d9ff]/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-xl">
+                {/* Badge de plataforma */}
+                {product.platform && (
+                  <span className="inline-block bg-white/10 backdrop-blur-sm border border-white/10 px-4 py-2 rounded-full text-xs font-semibold tracking-wider uppercase mb-4">
+                    🎮 {product.platform}
+                  </span>
+                )}
 
-            {/* Información de la API */}
-            {apiData && (
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">Detalles del juego</h3>
-                
-                {apiData.rating && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-yellow-500">⭐</span>
-                    <span className="font-medium">{apiData.rating}/5</span>
-                    <span className="text-gray-500">({apiData.ratings_count} reseñas)</span>
+                {/* Título */}
+                <h1 className="text-4xl font-extrabold mb-4 leading-tight bg-gradient-to-r from-white to-[#00d9ff] bg-clip-text text-transparent">
+                  {product.name}
+                </h1>
+
+                {/* Rating */}
+                {apiData?.rating && (
+                  <div className="flex items-center gap-3 py-4 border-t border-b border-white/10">
+                    <div className="flex gap-1 text-[#ffaa00] text-xl">
+                      {'★'.repeat(Math.round(apiData.rating))}
+                      {'☆'.repeat(5 - Math.round(apiData.rating))}
+                    </div>
+                    <span className="text-gray-400 text-sm">
+                      {apiData.rating}/5 ({apiData.ratings_count || 937} reseñas)
+                    </span>
                   </div>
                 )}
+
+                {/* Precio y stock */}
+                <div className="flex items-center gap-4 mt-4">
+                  <div className="text-5xl font-extrabold text-[#00ff88] font-space-mono">
+                    ${Number(product.price).toLocaleString('en-US')}
+                  </div>
+                  {product.stock > 0 && product.stock <= 10 && (
+                    <div className="flex items-center gap-2 bg-[#ffaa00]/20 border border-[#ffaa00] text-[#ffaa00] px-4 py-2 rounded-full text-sm font-semibold">
+                      <span className="text-lg">⚠</span>
+                      Stock limitado
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              
+
+              {/* CTA Section */}
+              <div className="bg-gradient-to-br from-[#1e2433] to-[#141824] backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-xl">
                 
-                {apiData.genres && (
-                  <div>
-                    <p className="text-sm text-gray-600 mb-1">Géneros:</p>
-                    <div className="flex flex-wrap gap-2">
-                      {apiData.genres.map(genre => (
-                        <span key={genre.id} className="px-2 py-1 bg-[#00FF66]/70 hover:bg-[#00CC52] text-black font-semibold rounded-lg transition-all duration-200 shadow-lg shadow-[#00FF66]/30 hover:shadow-[#00FF66]/50">
-                          {genre.name}
-                        </span>
+                {/* Selector de cantidad */}
+               {product.stock > 0 && (
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-semibold text-gray-400">Cantidad:</span>
+                      
+                    </div>
+                    <div className="flex items-center bg-white/5 border border-white/10 rounded-full overflow-hidden justify-between">
+                      <div className="flex items-center pl-2">
+                      <button
+                        onClick={decreaseQty}
+                        disabled={quantity <= 1}
+                        className="w-10 h-10 flex items-center justify-center text-white hover:bg-[#ff0055] transition-all text-xl font-bold disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                      >
+                        −
+                      </button>
+                      <span className="px-6 text-white/60 ">{quantity}</span>
+                      <button
+                        onClick={increaseQty}
+                        disabled={quantity >= product.stock}
+                        className="w-10 h-10 flex items-center justify-center text-white hover:bg-[#ff0055] transition-all text-xl font-bold disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                      >
+                        +
+                      </button>
+                      </div>
+                      <span className="text-sm text-gray-400 pr-4">
+                        Stock disponible: <span className="text-[#00ff88] font-semibold">{product.stock}</span>
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Botones de acción */}
+                <div className="mb-3 mb-6 flex flex-col md:flex-row gap-4 ">
+                  {product.stock > 0 ? (
+                    <button
+                      onClick={handleAddToCart}
+                      className="w-full py-4 px-6 bg-gradient-to-r from-[#ff0055] to-[#cc0044] text-white font-bold text-lg rounded-2xl shadow-lg shadow-[#ff0055]/30 hover:shadow-[#ff0055]/50 transition-all duration-300 hover:-translate-y-0.5 relative overflow-hidden group"
+                    >
+                      <span className="relative z-10 flex items-center justify-center gap-2">
+                        🛒 Comprar ahora
+                      </span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
+                    </button>
+                  ) : (
+                    <div className="w-full py-4 px-6 bg-red-500/20 border border-red-500 text-red-400 font-bold text-lg rounded-2xl text-center">
+                      ✗ Agotado
+                    </div>
+                  )}
+
+                  <button className="w-full py-4 px-6 bg-white/5 backdrop-blur-sm border border-white/10 text-white font-semibold rounded-2xl hover:bg-white/10 hover:border-[#00d9ff] transition-all duration-300">
+                    ♥ Añadir a favoritos
+                  </button>
+                </div>
+
+                {/* Trust badges */}
+                <div className="flex justify-around gap-4 pt-6 border-t border-white/10">
+                  {[
+                    { icon: '✓', text: 'Pago seguro' },
+                    { icon: '🔄', text: 'Garantía 24h' },
+                    { icon: '🌟', text: 'Verificado' }
+                  ].map((badge, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-sm text-gray-400">
+                      <span className="text-lg">{badge.icon}</span>
+                      <span>{badge.text}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+            </div>
+            
+          </div>
+           {/* Tabs de descripción */}
+              <div className="bg-white/3 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden shadow-xl mt-8">
+                {/* Tabs headers */}
+                <div className="flex bg-black/30 border-b border-white/10">
+                  {[
+                    { id: 'description', label: 'Descripción' },
+                    { id: 'specs', label: 'Especificaciones' },
+                    { id: 'reviews', label: 'Reseñas' }
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`flex-1 py-5 px-4 font-semibold transition-all relative ${
+                        activeTab === tab.id 
+                          ? 'text-white bg-[#ff0055]/10' 
+                          : 'text-gray-400 hover:text-white'
+                      }`}
+                    >
+                      {tab.label}
+                      {activeTab === tab.id && (
+                        <div className="absolute bottom-0 left-0 w-full h-1 bg-[#ff0055]" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Tab content */}
+                <div className="p-8">
+                  {activeTab === 'description' && (
+                    <div className="space-y-4 text-gray-300 leading-relaxed animate-fadeIn">
+                      {product.description ? (
+                        <div 
+                          className="prose prose-invert max-w-none"
+                          dangerouslySetInnerHTML={{ __html: product.description }}
+                        />
+                      ) : (
+                        <>
+                          <p>
+                            Prepárate para balancearte por las calles de Nueva York como nunca antes con {product.name}. 
+                            De la mano de desarrolladores de clase mundial, este juego te sumerge en una experiencia trepidante.
+                          </p>
+                          <p>
+                            Lánzate a la acción en un mundo abierto vibrante y lleno de peligros, mientras dominas nuevos 
+                            poderes y te enfrentas a enemigos formidables para proteger tu hogar.
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'specs' && (
+                    <div className="space-y-3 animate-fadeIn">
+                      {[
+                        { label: 'Plataforma', value: product.platform || 'PC / Consola' },
+                        { label: 'Género', value: apiData?.genres?.map(g => g.name).join(', ') || product.category },
+                        { label: 'Desarrollador', value: apiData?.developers?.[0]?.name || product.brand || 'N/A' },
+                        { label: 'Fecha de lanzamiento', value: apiData?.released || 'N/A' },
+                        { label: 'Clasificación', value: product.rating || 'PEGI 16 / ESRB Teen' },
+                        { label: 'Código', value: product.code || 'N/A' },
+                        { label: 'IVA', value: product.taxRate ? `${product.taxRate}%` : '19%' }
+                      ].map((spec, idx) => (
+                        <div 
+                          key={idx}
+                          className="flex bg-white/3 backdrop-blur-sm border border-white/10 rounded-xl p-4"
+                        >
+                          <div className="flex-shrink-0 w-48 font-semibold text-white">{spec.label}</div>
+                          <div className="text-gray-400">{spec.value}</div>
+                        </div>
                       ))}
                     </div>
-                  </div>
-                )}
-                
-                {apiData.released && (
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Lanzamiento:</span> {apiData.released}
-                  </p>
-                )}
-                
-                {apiData.developers && (
-                  <p className="text-sm text-gray-600">
-                    <span className="font-medium">Desarrollador:</span> {apiData.developers[0]?.name}
-                  </p>
-                )}
-              </div>
-            )}
+                  )}
 
-            {/* Controles de compra */}
-            {product.stock > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center space-x-4">
-                  <label className="text-sm font-medium text-gray-700">Cantidad:</label>
-                  <select 
-                    value={quantity}
-                    onChange={(e) => setQuantity(Number(e.target.value))}
-                    className="border border-gray-300 rounded-md px-3 py-1"
-                  >
-                    {Array.from({length: Math.min(product.stock, 10)}, (_, i) => (
-                      <option key={i+1} value={i+1}>{i+1}</option>
-                    ))}
-                  </select>
+                  {activeTab === 'reviews' && (
+                    <div className="space-y-4 animate-fadeIn">
+                      <p className="text-gray-300 leading-relaxed mb-6">
+                        Con más de {apiData?.ratings_count || 937} reseñas positivas, {product.name} ha cautivado a 
+                        jugadores de todo el mundo. Los usuarios destacan sus impresionantes gráficos de última generación, 
+                        su fluida jugabilidad y una historia emocionante.
+                      </p>
+
+                      {/* Ejemplos de reseñas */}
+                      {[
+                        { author: 'JM', name: 'Jorge Martínez', rating: 5, text: 'Una obra maestra visual y narrativa. Los gráficos son impresionantes y el gameplay es súper fluido. Vale cada peso.', helpful: 24, date: 'Hace 2 días' },
+                        { author: 'AL', name: 'Andrea López', rating: 5, text: 'El mejor juego que he jugado. El sistema de combate es adictivo. Totalmente recomendado.', helpful: 18, date: 'Hace 5 días' },
+                        { author: 'CR', name: 'Carlos Ruiz', rating: 4, text: 'Excelente juego aunque un poco corto. La banda sonora es increíble. Compra recomendada.', helpful: 31, date: 'Hace 1 semana' }
+                      ].map((review, idx) => (
+                        <div key={idx} className="bg-white/3 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/5 hover:border-[#ff0055] transition-all">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff0055] to-[#00d9ff] flex items-center justify-center font-bold text-sm">
+                                {review.author}
+                              </div>
+                              <div>
+                                <div className="font-semibold text-sm">{review.name}</div>
+                                <div className="text-xs text-gray-500">{review.date}</div>
+                              </div>
+                            </div>
+                            <div className="flex gap-1 text-[#ffaa00]">
+                              {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
+                            </div>
+                          </div>
+                          <p className="text-gray-300 text-sm leading-relaxed mb-4">{review.text}</p>
+                          <div className="flex items-center gap-3 pt-4 border-t border-white/10 text-sm text-gray-400">
+                            <span>¿Te resultó útil?</span>
+                            <button className="bg-white/5 border border-white/10 px-3 py-1 rounded-lg hover:bg-[#00ff88]/10 hover:border-[#00ff88] hover:text-[#00ff88] transition-all">
+                              👍 Sí ({review.helpful})
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                
-                <button
-                  onClick={handleAddToCart}
-                  className="w-full py-3 px-6 text-white font-medium rounded-lg bg-[#FF0099] hover:bg-[#CC0077] transition-all duration-200 shadow-lg shadow-[#FF0099]/30 hover:shadow-[#FF0099]/50"
+              </div>       
+          {/* Sección de productos relacionados */}
+          <div className="mt-16 animate-fadeIn" style={{ animationDelay: '0.8s' }}>
+            <h2 className="text-3xl font-bold mb-8 flex items-center gap-4">
+              <div className="w-1 h-10 bg-gradient-to-b from-[#ff0055] to-[#00d9ff] rounded-full" />
+              También te puede interesar
+            </h2>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Aquí mapearías tus productos relacionados */}
+              {[1, 2, 3, 4].map((item) => (
+                <div 
+                  key={item}
+                  className="bg-white/3 backdrop-blur-sm border border-white/10 rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:border-[#ff0055] hover:shadow-2xl cursor-pointer"
                 >
-                  Agregar al carrito
-                </button>
-              </div>
-            )}
-
-            {/* Información adicional */}
-            <div className="border-t pt-6 space-y-2">
-              {product.brand && (
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium">Marca:</span> {product.brand}
-                </p>
-              )}
-              {product.code && (
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium">Código:</span> {product.code}
-                </p>
-              )}
-              {product.taxRate && (
-                <p className="text-sm text-gray-600">
-                  <span className="font-medium">IVA:</span> {product.taxRate}%
-                </p>
-              )}
+                  <div className="aspect-video bg-gradient-to-br from-[#141824] to-[#1e2433]" />
+                  <div className="p-5">
+                    <div className="font-semibold mb-2 text-white">Producto relacionado {item}</div>
+                    <div className="text-2xl font-bold text-[#00ff88] font-space-mono">$299,000</div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -454,26 +641,26 @@ const ProductDetail = () => {
 
       {/* Modal de confirmación */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
+          <div className="bg-gradient-to-br from-[#1e2433] to-[#141824] border border-white/10 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
             <div className="text-center">
-              <div className="text-green-500 text-4xl mb-4">✓</div>
-              <h2 className="text-xl font-bold text-gray-800 mb-2">
+              <div className="text-[#00ff88] text-5xl mb-4">✓</div>
+              <h2 className="text-2xl font-bold text-white mb-2">
                 ¡Producto agregado al carrito!
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-400 mb-8">
                 {product.name} se ha agregado exitosamente
               </p>
-              <div className="flex space-x-4">
+              <div className="flex gap-4">
                 <button
                   onClick={() => setShowModal(false)}
-                  className="flex-1 py-2 px-4 border border-gray-300 rounded-lg hover:bg-gray-50"
+                  className="flex-1 py-3 px-4 border border-white/10 rounded-xl hover:bg-white/5 text-white font-semibold transition-all"
                 >
                   Seguir comprando
                 </button>
                 <button
                   onClick={() => navigate('/cart')}
-                  className="flex-1 py-2 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                  className="flex-1 py-3 px-4 bg-gradient-to-r from-[#ff0055] to-[#cc0044] text-white rounded-xl hover:shadow-lg hover:shadow-[#ff0055]/50 font-semibold transition-all"
                 >
                   Ver carrito
                 </button>
@@ -482,30 +669,31 @@ const ProductDetail = () => {
           </div>
         </div>
       )}
+
+      {/* Preview de media en pantalla completa */}
       {previewMedia && (
         <div 
-          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/95 backdrop-blur-xl z-50 flex items-center justify-center p-4 animate-fadeIn"
           onClick={() => setPreviewMedia(null)}
         >
           <button
             onClick={() => setPreviewMedia(null)}
-            className="absolute top-4 right-4 bg-white text-black p-2 rounded-full hover:bg-gray-200 transition z-10"
+            className="absolute top-4 right-4 bg-white/10 backdrop-blur-sm border border-white/20 text-white p-3 rounded-full hover:bg-white/20 transition z-10"
           >
             <X className="w-6 h-6" />
           </button>
           
-          {/* Flechas de navegación en preview */}
           {product.media && product.media.length > 1 && (
             <>
               <button
                 onClick={(e) => { e.stopPropagation(); prevMedia(); }}
-                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/20 text-white p-3 rounded-full hover:bg-white/30 transition z-10"
+                className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 backdrop-blur-sm border border-white/20 text-white p-4 rounded-full hover:bg-white/20 transition z-10"
               >
                 <ChevronLeft className="w-8 h-8" />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); nextMedia(); }}
-                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/20 text-white p-3 rounded-full hover:bg-white/30 transition z-10"
+                className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 backdrop-blur-sm border border-white/20 text-white p-4 rounded-full hover:bg-white/20 transition z-10"
               >
                 <ChevronRight className="w-8 h-8" />
               </button>
@@ -517,20 +705,20 @@ const ProductDetail = () => {
               <img 
                 src={previewMedia.url} 
                 alt="Preview" 
-                className="w-full h-full object-contain rounded-lg"
+                className="w-full h-full object-contain rounded-xl"
               />
             ) : (
               <video 
                 src={previewMedia.url} 
                 controls 
                 autoPlay
-                className="w-full h-full max-h-[90vh] rounded-lg"
+                className="w-full h-full max-h-[90vh] rounded-xl"
               />
             )}
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

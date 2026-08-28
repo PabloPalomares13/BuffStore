@@ -85,3 +85,6 @@
     transform: translate(-8%, 5%) rotate(-2deg);
   }
 }
+.header-link {
+  font-family: "Urbanist", sans-serif;
+}

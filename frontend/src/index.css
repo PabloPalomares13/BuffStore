@@ -1,5 +1,22 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "Haze New";
+  src: url("./assets/fonts/Haze New Demo.ttf") format("truetype");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Haze New Defog";
+  src: url("./assets/fonts/Haze New Defog Demo.ttf") format("truetype");
+  font-display: swap;
+}
+
+@theme {
+  --font-haze: "Haze New", sans-serif;
+  --font-haze-defog: "Haze New Defog", sans-serif;
+}
+
 @keyframes gradient-motion {
   0% {
     background-position: 0% 50%;
@@ -16,3 +33,52 @@
   animation: gradient-motion 15s ease-in-out infinite;
 }
 
+.header-link {
+  font-family: "Urbanist", sans-serif;
+}
+
+@keyframes orbitGreen {
+  0% {
+    left: -2px;
+    top: 50%;
+  }
+  25% {
+    left: 50%;
+    top: -2px;
+  }
+  50% {
+    left: calc(100% + 2px);
+    top: 50%;
+  }
+  75% {
+    left: 50%;
+    top: calc(100% + 2px);
+  }
+  100% {
+    left: -2px;
+    top: 50%;
+  }
+}
+
+@keyframes orbitPink {
+  0% {
+    left: calc(100% + 2px);
+    top: 50%;
+  }
+  25% {
+    left: 50%;
+    top: calc(100% + 2px);
+  }
+  50% {
+    left: -2px;
+    top: 50%;
+  }
+  75% {
+    left: 50%;
+    top: -2px;
+  }
+  100% {
+    left: calc(100% + 2px);
+    top: 50%;
+  }
+}

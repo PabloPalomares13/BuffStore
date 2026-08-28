@@ -14,6 +14,10 @@ import Register from './pages/Register';
 import Checkout from './pages/Checkout';
 import ChatBot from './pages/ChatBot';
 import UserProfile from './pages/UserProfile';
+import CheckoutSuccess from './pages/CheckoutSuccess';
+import CheckoutFailure from './pages/CheckoutFailure';
+import CheckoutPending from './pages/CheckoutPending';
+
 
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
@@ -32,7 +36,10 @@ function App() {
     <Route element={<MainLayout/>}>
       <Route path="/" element={<Home />} />
       <Route path="/home" element={<Home />} />
-      <Route path="/checkout" element={<Checkout />} />
+      <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+      <Route path="/checkout/success" element={<ProtectedRoute><CheckoutSuccess /></ProtectedRoute>} />
+      <Route path="/checkout/failure" element={<ProtectedRoute><CheckoutFailure /></ProtectedRoute>} />
+      <Route path="/checkout/pending" element={<ProtectedRoute><CheckoutPending /></ProtectedRoute>} />
       <Route path="/product/:id" element={<ProductDetail />} />
       <Route path="/UserProfile" element={<ProtectedRoute requiredRoles={["user", "admin"]}><UserProfile /></ProtectedRoute>} />
     </Route>
