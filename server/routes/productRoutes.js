@@ -4,7 +4,7 @@ const multer = require('multer');
 const Product = require('../models/Product');
 const { uploadFileToGCS, deleteFileFromGCS, generateFileName, processAndUploadVideo } = require('../config/storage');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
-
+const { getFeaturedProducts } = require('../Controllers/productControllers');
 // Configuración de multer para manejar archivos en memoria
 const storage = multer.memoryStorage();
 const upload = multer({ 
@@ -121,7 +121,7 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
-
+router.get('/featured', getFeaturedProducts);
 // Obtener producto por ID
 router.get('/:id', async (req, res) => {
   try {
@@ -288,5 +288,7 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+router.get('/featured', getFeaturedProducts);
 
 module.exports = router;

@@ -1,13 +1,14 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef,useMemo } from 'react';
 import { LazyLoadImage } from 'react-lazy-load-image-component';
 import { ChevronLeft, ChevronRight,ShoppingCart } from "lucide-react";
+import { getFeaturedProducts } from "../services/productService";
+import FeaturedProducts from "../components/ui/FeaturedProducts";
 import 'react-lazy-load-image-component/src/effects/blur.css'; 
 import fondo from "../assets/fondogradient.png";
 import buff from "../assets/Buff1.png";
 import store from "../assets/Store.png";
 import logo from "../assets/logobuff0033.png";
-import rockstar from "../assets/rockstar.png";
 import { useNavigate } from 'react-router-dom';
 const link = import.meta.env.PROD 
   ? import.meta.env.VITE_BACKEND_URL
@@ -83,6 +84,7 @@ const logos = [
             date: 'May 10, 2025'
         },
     ]
+  
   const Home = () => {
 
     const [products, setProducts] = useState([]);
@@ -93,12 +95,30 @@ const logos = [
     const [isAutoScrolling, setIsAutoScrolling] = useState(true);
     const scrollContainerRef = useRef(null);
     const autoScrollRef = useRef(null);
+    const [error, setError] = useState(null);
+    const [featuredProducts, setFeaturedProducts] = useState([]);
+    const [loadingFeatured, setLoadingFeatured] = useState(true);
+    const [errorFeatured, setErrorFeatured] = useState(null);
     
     const navigate = useNavigate();
     const handleProductClick = (productId) => {
     navigate(`/product/${productId}`);
     };
-
+    useEffect(() => {
+      const fetchFeatured = async () => {
+        try {
+          const response = await fetch(`${link}/api/products/featured`);
+          if (!response.ok) throw new Error("Error al obtener los productos destacados");
+          const data = await response.json();
+          setFeaturedProducts(data);
+        } catch (err) {
+          setErrorFeatured(err.message);
+        } finally {
+          setLoadingFeatured(false);
+        }
+      };
+      fetchFeatured();
+    }, []);
     const fetchProducts = async () => {
         try {
           const response = await fetch(`${link}/api/products`);
@@ -253,13 +273,13 @@ const logos = [
           };
         };
 
-        if (products.length === 0) {
-          return (
-            <div className="flex items-center justify-center h-96">
-              <div className="text-gray-400 text-xl">Cargando productos...</div>
-            </div>
-          );
-        }
+        // if (products.length === 0) {
+        //   return (
+        //     <div className="flex items-center justify-center h-96">
+        //       <div className="text-gray-400 text-xl">Cargando productos...</div>
+        //     </div>
+        //   );
+        // }
     
     const CreateCard = ({ card }) => (
     <div className="p-10 rounded-lg mx-2 shadow-lg shadow-gray-600/30 hover:shadow-xl transition-all duration-200 w-72 shrink-0 bg-neutral-800/60 backdrop-blur-sm border border-neutral-700">
@@ -361,7 +381,14 @@ const logos = [
       </div>    
       </div>
       
-  
+      <section className="h-screen ">
+
+        {loadingFeatured && <p className="text-white">Cargando destacados...</p>}
+        {errorFeatured && <p className="text-red-400">No se pudieron cargar los destacados.</p>}
+        {!loadingFeatured && !errorFeatured && featuredProducts.length > 0 && (
+          <FeaturedProducts products={featuredProducts} />
+        )}
+      </section>
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="w-12 h-12 border-4 border-pink-500 border-t-transparent rounded-full animate-spin"></div>

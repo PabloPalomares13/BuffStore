@@ -17,6 +17,7 @@ export default function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState(null);
+  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
  
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -27,16 +28,62 @@ export default function Header() {
   const searchInputRef = useRef(null);
   const profileRef = useRef(null);
  
+    const lastScrollY = useRef(0);
   // Auth + scroll state (misma lógica que tenías)
-  useEffect(() => {
+    useEffect(() => {
     const token = localStorage.getItem("userToken");
     const role = localStorage.getItem("userRole");
+
     setIsAuthenticated(!!token);
-    if (role) setUserRole(role);
- 
-    const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    if (role) {
+      setUserRole(role);
+    }
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Si estamos arriba de la página,
+      // el header SIEMPRE debe estar visible
+      if (currentScrollY <= 20) {
+      setIsHeaderHidden(false);
+      setIsScrolled(false);
+      lastScrollY.current = currentScrollY;
+      return;
+      }
+
+      setIsScrolled(true);
+
+      const topThreshold = (window.innerHeight * 2) / 5;
+
+      if (currentScrollY < topThreshold) {
+      // Todavía no hemos recorrido el 20%
+      // desde el top → mantener header visible
+      setIsHeaderHidden(false);
+
+      lastScrollY.current = currentScrollY;
+      return;
+    }
+      // Scroll hacia ABAJO
+      if (currentScrollY > lastScrollY.current) {
+        setIsHeaderHidden(true);
+      }
+
+      // Scroll hacia ARRIBA
+      else if (currentScrollY < lastScrollY.current) {
+        setIsHeaderHidden(false);
+      }
+
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, {
+      passive: true,
+    });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
  
   // Cerrar buscador / menú de usuario al hacer click afuera
@@ -83,11 +130,24 @@ export default function Header() {
   return (
     <header
       style={{ fontFamily: '"Urbanist", sans-serif' }}
-      className={`fixed top-0 left-0 w-full z-50 transition-all duration-600 ${
-        isScrolled
-          ? "bg-white/6 shadow-md backdrop-blur-sm"
-          : "bg-white/2 backdrop-blur-lg shadow-lg"
-      }`}
+      className={`
+        fixed top-0 left-0 w-full z-50
+        transform
+        transition-all
+        duration-300
+        ease-out
+        will-change-transform
+        ${
+          isHeaderHidden
+            ? "-translate-y-full"
+            : "translate-y-0"
+        }
+        ${
+          isScrolled
+            ? "bg-white/6 shadow-md backdrop-blur-sm"
+            : "bg-white/2 backdrop-blur-lg shadow-lg"
+        }
+      `}
     >
       <div className="mx-auto max-w-[104rem] px-4 sm:px-6 lg:px-8">
         <div className="relative flex h-20 items-center justify-between">

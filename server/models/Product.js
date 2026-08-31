@@ -9,7 +9,7 @@ const productSchema = new mongoose.Schema({
   stock: Number,
   taxRate: Number,
   category: String,
-  tags: String,
+  tags:  { type: [String], default: [] },
   brand: String,
   vendor: String,
   images: [String],// Array de URLs de Google Cloud Storage
@@ -21,7 +21,14 @@ const productSchema = new mongoose.Schema({
     fileName: String,
     uploadedAt: { type: Date, default: Date.now },
     processing: { type: Boolean, default: false }
-  }]
+  }],
+  platforms: {
+    type: [String],
+    enum: ['ps5', 'pc', 'xbox'],
+    default: [],
+  },
+  featured: { type: Boolean, default: false },
+  displayOrder: { type: Number, default: 0 },
 }, {
   timestamps: true
 });
