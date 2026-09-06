@@ -10,6 +10,7 @@ const geminiRoutes = require('./routes/geminiRoutes');
 const gameCodeRoutes = require("./routes/gameCodesRoutes");
 const videoRoutes = require('./routes/videoRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const favoritesRoutes = require('./routes/favoritesRoutes');
 const path = require('path');
 const cors = require('cors');
 
@@ -69,6 +70,7 @@ app.use('/api/gemini', geminiRoutes);
 app.use("/api/codes", gameCodeRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/favoritos', favoritesRoutes);
 
 app.get('/', (req, res) => {
   res.json({ 

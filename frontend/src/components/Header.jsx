@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import {
   Search,
@@ -10,10 +9,14 @@ import {
   ShoppingCart,
   Menu,
   X,
+  Heart,
 } from "lucide-react";
 import logo from "../assets/BLogo4k-white.png";
+import axios from "axios";
  
 export default function Header() {
+  
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [userRole, setUserRole] = useState(null);
@@ -27,7 +30,18 @@ export default function Header() {
   const searchWrapRef = useRef(null);
   const searchInputRef = useRef(null);
   const profileRef = useRef(null);
- 
+  const mobileSearchButtonRef = useRef(null);
+  const mobileSearchPanelRef = useRef(null);
+
+
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  
+  const link = import.meta.env.PROD
+  ? import.meta.env.VITE_BACKEND_URL
+  : 'http://localhost:3000';  
+
     const lastScrollY = useRef(0);
   // Auth + scroll state (misma lógica que tenías)
     useEffect(() => {
@@ -89,11 +103,16 @@ export default function Header() {
   // Cerrar buscador / menú de usuario al hacer click afuera
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (searchWrapRef.current && !searchWrapRef.current.contains(e.target)) {
-        setIsSearchOpen(false);
-      }
       if (profileRef.current && !profileRef.current.contains(e.target)) {
         setIsProfileMenuOpen(false);
+      }
+
+      const isDesktopScreen = window.innerWidth >= 768; // breakpoint 'md' de Tailwind
+      if (isDesktopScreen) {
+        if (searchWrapRef.current && !searchWrapRef.current.contains(e.target)) {
+          setIsSearchOpen(false);
+          setShowResults(false);
+        }
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -102,23 +121,54 @@ export default function Header() {
  
   // Cerrar buscador con Escape + autofocus al abrir
   useEffect(() => {
-    if (isSearchOpen) {
-      searchInputRef.current?.focus();
+      if (isSearchOpen) {
+        searchInputRef.current?.focus();
+      }
+      const handleEsc = (e) => {
+        if (e.key === "Escape") setIsSearchOpen(false);
+      };
+      window.addEventListener("keydown", handleEsc);
+      return () => window.removeEventListener("keydown", handleEsc);
+    }, [isSearchOpen]);
+    useEffect(() => {
+    // Si el input está vacío, no buscamos y limpiamos resultados
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      setShowResults(false);
+      setIsSearching(false);
+      return;
     }
-    const handleEsc = (e) => {
-      if (e.key === "Escape") setIsSearchOpen(false);
-    };
-    window.addEventListener("keydown", handleEsc);
-    return () => window.removeEventListener("keydown", handleEsc);
-  }, [isSearchOpen]);
- 
-  const handleLogout = () => {
-    localStorage.removeItem("userToken");
-    localStorage.removeItem("userRole");
-    setIsAuthenticated(false);
-    setIsProfileMenuOpen(false);
-    window.location.href = "/login";
-  };
+
+    setIsSearching(true);
+
+    
+    const timeoutId = setTimeout(async () => {
+      try {
+        const res = await axios.get(
+          `${link}/api/products/search`,
+          { params: { q: searchQuery } }
+        );
+        console.log("RESPUESTA BACKEND:", res.data);
+        setSearchResults(res.data.products || res.data); // ajusta según lo que devuelva tu endpoint
+        setShowResults(true);
+      } catch (error) {
+        console.error("Error buscando productos:", error);
+        setSearchResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 500); // 500ms de espera prudente antes de disparar la búsqueda
+
+    // Si el usuario sigue escribiendo, cancelamos la búsqueda anterior
+    return () => clearTimeout(timeoutId);
+      }, [searchQuery]);
+      const handleLogout = () => {
+        localStorage.removeItem("userToken");
+        localStorage.removeItem("userRole");
+        setIsAuthenticated(false);
+        setIsProfileMenuOpen(false);
+        window.location.href = "/login";
+      };
  
   const navLinks = [
     { name: "Inicio", href: "/" },
@@ -144,8 +194,8 @@ export default function Header() {
         }
         ${
           isScrolled
-            ? "bg-white/6 shadow-md backdrop-blur-sm"
-            : "bg-white/2 backdrop-blur-lg shadow-lg"
+            ? "bg-black/70 shadow-md backdrop-blur-sm"
+            : "bg-black/90 backdrop-blur-lg shadow-lg"
         }
       `}
     >
@@ -159,7 +209,7 @@ export default function Header() {
           >
             {isMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
- 
+
           {/* Logo: centrado en móvil/tablet, a la izquierda en desktop */}
           <a
             href="/home"
@@ -167,60 +217,120 @@ export default function Header() {
           >
             <img src={logo} alt="Buff Store" className="h-18 w-auto" />
           </a>
- 
-          {/* Nav + buscador expandible (solo desktop) */}
-            <div
-                ref={searchWrapRef}
-                className="hidden md:flex relative items-center mx-8 h-13 w-[34rem] rounded-full bg-white/10 backdrop-blur-md border border-white/10 overflow-hidden"
-                >
-                {/* Links: mismo espacio entre ellos que en los bordes */}
-                <nav
-                    className={`flex flex-1 min-w-0 items-center justify-evenly px-5 transition-opacity duration-300 ${
-                    isSearchOpen ? "opacity-0 pointer-events-none" : "opacity-100"
-                    }`}
-                >
-                    {navLinks.map((link) => (
-                    <a
-                        key={link.name}
-                        href={link.href}
-                        className="text-md text-white/90 hover:text-white/40 transition-colors "
-                        
-                    >   
-                        {link.name}
-                    </a>
-                    ))}
-                </nav>
 
-                {/* Input: se expande desde la izquierda, sin tocar el botón */}
-                <div
-                    className={`absolute inset-y-0 left-0 flex items-center transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                    isSearchOpen ? "right-11 opacity-100" : "right-full opacity-0 pointer-events-none"
-                    }`}
-                >
-                    <input
-                    ref={searchInputRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="¿Que estas buscando hoy?"
-                    className="w-full bg-transparent pl-7 pr-4  text-sm text-white placeholder-white/50 focus:outline-none"
-                    
-                    />
-                </div>
+        <div
+          ref={searchWrapRef}
+          className="hidden md:flex relative items-center mx-8 w-[34rem]"
+        >
+        <div
+          className="flex relative items-center h-13 w-full rounded-full bg-white/10 backdrop-blur-md border border-white/10 overflow-hidden"
+        >
+          {/* Links: mismo espacio entre ellos que en los bordes */}
+          <nav
+            className={`flex flex-1 min-w-0 items-center justify-evenly px-5 transition-opacity duration-300 ${
+              isSearchOpen ? "opacity-0 pointer-events-none" : "opacity-100"
+            }`}
+          >
+            {navLinks.map((link) => (
+              <a
+                key={link.name}
+                href={link.href}
+                className="text-md text-white/90 hover:text-white/40 transition-colors"
+              >
+                {link.name}
+              </a>
+            ))}
+          </nav>
 
-                {/* Botón único: ya no se monta con los links, siempre en el mismo lugar */}
-                <button
-                    onClick={() => setIsSearchOpen((v) => !v)}
-                    className="relative z-10 flex items-center justify-center h-8 w-8 mr-3 rounded-full hover:bg-white/10 text-white shrink-0"
-                    aria-label={isSearchOpen ? "Cerrar búsqueda" : "Buscar"}
-                >
-                    {isSearchOpen ? <X size={17} /> : <Search size={17} />}
-                </button>
+          {/* Input: se expande desde la izquierda, sin tocar el botón */}
+          <div
+            className={`absolute inset-y-0 left-0 flex items-center transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+              isSearchOpen ? "right-11 opacity-100" : "right-full opacity-0 pointer-events-none"
+            }`}
+          >
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="¿Que estas buscando hoy?"
+              className="w-full bg-transparent pl-7 pr-4 text-sm text-white placeholder-white/50 focus:outline-none"
+            />
+          </div>
+
+          {/* Botón único: ya no se monta con los links, siempre en el mismo lugar */}
+          <button
+            onClick={() => setIsSearchOpen((v) => !v)}
+            className="relative z-10 flex items-center justify-center h-8 w-8 mr-3 rounded-full hover:bg-white/10 text-white shrink-0"
+            aria-label={isSearchOpen ? "Cerrar búsqueda" : "Buscar"}
+          >
+            {isSearchOpen ? <X size={17} /> : <Search size={17} />}
+          </button>
+        </div>
+
+          {/* Dropdown de resultados de búsqueda */}
+          {isSearchOpen && showResults && (
+            <div className="absolute top-full left-0 mt-2 w-[34rem] rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 overflow-hidden shadow-lg z-20">
+              {isSearching ? (
+                <div className="px-5 py-4 text-sm text-white/60">Buscando...</div>
+              ) : searchResults.length > 0 ? (
+                <ul className="max-h-80 overflow-y-auto divide-y divide-white/10">
+                  {searchResults.map((product) => (
+                    <li key={product._id}>
+                      <a
+                        href={`/product/${product._id}`}
+                        className="flex items-center gap-3 px-5 py-3 hover:bg-white/10 transition-colors"
+                      >
+                        {product.media?.[0]?.url && (
+                          <img
+                            src={product.media[0].url}
+                            alt={product.name}
+                            className="w-10 h-10 rounded-lg object-cover shrink-0"
+                          />
+                        )}
+                        <div className="min-w-0">
+                          <p className="text-sm text-white truncate">{product.name}</p>
+                          <p className="text-xs text-white/50">${product.price}</p>
+                        </div>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="px-5 py-4 text-sm text-white/60">
+                  No se encontraron resultados para "{searchQuery}"
                 </div>
+              )}
+            </div>
+          )}
+        </div>
+                
+                
  
           {/* Acciones a la derecha */}
           <div className="flex items-center gap-2.5">
- 
+            
+            {/* Favoritos: contorno neon verde/rosa, siempre difuminado, colores en esquinas opuestas */}
+            <div className="relative shrink-0">
+              <a
+              href="/favorites"
+              className="relative flex h-9 items-center gap-2 rounded-full bg-black/55 px-3.5 text-sm font-medium text-white backdrop-blur-md sm:px-4"
+            >
+              {/* Conducto / borde eléctrico */}
+              <span className="pointer-events-none absolute -inset-[0.1px] overflow-hidden rounded-full">
+                <span className="absolute inset-[-120%] animate-[spin_3.2s_linear_infinite] bg-[conic-gradient(from_0deg,transparent_0deg,transparent_118deg,#00FF37_135deg,#00FF37_148deg,transparent_165deg,transparent_278deg,#FF137A_295deg,#FF137A_308deg,transparent_325deg)]" />
+              </span>
+
+              {/* Capa interior: deja visible únicamente el borde */}
+              <span className="pointer-events-none absolute inset-[2px] rounded-full bg-black/90" />
+
+              {/* Halo exterior sutil */}
+              <span className="pointer-events-none absolute -inset-[3px] -z-10 rounded-full bg-[conic-gradient(from_0deg,transparent_0deg,transparent_118deg,rgba(0,255,55,.6)_135deg,rgba(0,255,55,.6)_148deg,transparent_165deg,transparent_278deg,rgba(255,19,122,.6)_295deg,rgba(255,19,122,.6)_308deg,transparent_325deg)] blur-md animate-[spin_3.2s_linear_infinite]" />
+
+              <Heart size={16} className="relative z-10" />
+            </a>
+            </div>
+            
             {/* Carrito: contorno neon verde/rosa, siempre difuminado, colores en esquinas opuestas */}
             <div className="relative shrink-0">
               
@@ -244,13 +354,16 @@ export default function Header() {
             </a>
             </div>
  
+            
+ 
             {/* Búsqueda en móvil */}
             <button
+              ref={mobileSearchButtonRef}
               onClick={() => setIsMenuOpen(false) || setIsSearchOpen((v) => !v)}
               className="md:hidden flex items-center justify-center h-9 w-9 rounded-full bg-white/10 text-white"
-              aria-label="Buscar"
+              aria-label={isSearchOpen ? "Cerrar búsqueda" : "Buscar"}
             >
-              <Search size={17} />
+              {isSearchOpen ? <X size={17} /> : <Search size={17} />}
             </button>
  
             {/* Usuario: reemplaza login/register, incluye dropdown */}
@@ -314,11 +427,12 @@ export default function Header() {
           </div>
         </div>
       </div>
- 
+
       {/* Buscador móvil: aparece debajo del header */}
       <div
+        ref={mobileSearchPanelRef}
         className={`md:hidden overflow-hidden transition-all duration-300 ${
-          isSearchOpen ? "max-h-16 border-t border-white/10" : "max-h-0"
+          isSearchOpen ? "max-h-[28rem] border-t border-white/10" : "max-h-0"
         }`}
       >
         <div className="flex items-center gap-2 px-4 py-2.5 bg-black/40 backdrop-blur-lg">
@@ -331,6 +445,41 @@ export default function Header() {
             className="w-full bg-transparent text-sm text-white placeholder-white/50 focus:outline-none"
           />
         </div>
+
+        {showResults && (
+          <div className="bg-black/40 backdrop-blur-lg border-t border-white/10">
+            {isSearching ? (
+              <div className="px-5 py-4 text-sm text-white/60">Buscando...</div>
+            ) : searchResults.length > 0 ? (
+              <ul className="max-h-80 overflow-y-auto divide-y divide-white/10">
+                {searchResults.map((product) => (
+                  <li key={product._id}>
+                    <a
+                      href={`/product/${product._id}`}
+                      className="flex items-center gap-3 px-5 py-3 hover:bg-white/10 transition-colors"
+                    >
+                      {product.media?.[0]?.url && (
+                        <img
+                          src={product.media[0].url}
+                          alt={product.name}
+                          className="w-10 h-10 rounded-lg object-cover shrink-0"
+                        />
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-sm text-white truncate">{product.name}</p>
+                        <p className="text-xs text-white/50">${product.price}</p>
+                      </div>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="px-5 py-4 text-sm text-white/60">
+                No se encontraron resultados para "{searchQuery}"
+              </div>
+            )}
+          </div>
+        )}
       </div>
  
       {/* Menú móvil: links de navegación */}
@@ -355,4 +504,3 @@ export default function Header() {
     </header>
   );
 }
-                                       

@@ -329,10 +329,9 @@ const handlePaymentError = (error) => {
     <div className="min-h-screen bg-gray-50 py-12 pt-28">
     <div className="max-w-6xl mx-auto px-4">
       
-      {/* ⬇️ AGREGAR: Indicador de pasos */}
+
       <div className="mb-8">
         <div className="flex items-center justify-center">
-          {/* Paso 1 */}
           <div className={`flex items-center ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
             <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 
               ${step >= 1 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300'}`}>
@@ -372,7 +371,6 @@ const handlePaymentError = (error) => {
         {/* Columna principal */}
         <div className="lg:col-span-2">
           
-          {/* ⬇️ PASO 1: Resumen y formulario (tu código actual) */}
           {step === 1 && (
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-2xl font-bold mb-6">Resumen del pedido</h2>
@@ -487,7 +485,6 @@ const handlePaymentError = (error) => {
             </div>
           )}
 
-          {/* ⬇️ PASO 2: Pago con Mercado Pago - AGREGAR COMPLETO */}
           {step === 2 && order && (
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-2xl font-bold mb-6">Realizar pago</h2>
@@ -518,7 +515,6 @@ const handlePaymentError = (error) => {
             </div>
           )}
 
-          {/* ⬇️ PASO 3: Confirmación - AGREGAR COMPLETO */}
           {step === 3 && (
             <div className="bg-white rounded-lg shadow-md p-8 text-center">
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">

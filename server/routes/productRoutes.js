@@ -4,7 +4,7 @@ const multer = require('multer');
 const Product = require('../models/Product');
 const { uploadFileToGCS, deleteFileFromGCS, generateFileName, processAndUploadVideo } = require('../config/storage');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
-const { getFeaturedProducts } = require('../Controllers/productControllers');
+const { getFeaturedProducts, searchProducts  } = require('../Controllers/productControllers');
 // Configuración de multer para manejar archivos en memoria
 const storage = multer.memoryStorage();
 const upload = multer({ 
@@ -35,13 +35,23 @@ router.post('/', protect, isAdmin, upload.fields([{ name: 'images', maxCount: 10
       images: [],
       media: []
     });
-
+ 
     const savedProduct = await product.save();
-
+ 
+    // NUEVO: parsear los flags de "procesar o no" que manda el admin
+    let videoProcessFlags = [];
+    if (req.body.videoProcessFlags) {
+      try {
+        videoProcessFlags = JSON.parse(req.body.videoProcessFlags);
+      } catch (e) {
+        console.error('videoProcessFlags inválido:', e.message);
+      }
+    }
+ 
     const GameCode = require('../models/GameCode');
     const crypto = require('crypto');
     const mediaItems = [];
-
+ 
     const generateCodesForProduct = async (productId, stock) => {
       const codes = [];
       for (let i = 0; i < stock; i++) {
@@ -51,16 +61,16 @@ router.post('/', protect, isAdmin, upload.fields([{ name: 'images', maxCount: 10
       await GameCode.insertMany(codes);
       console.log(`${codes.length} códigos generados para el producto ${productId}`);
     };
-
+ 
     if (savedProduct.stock > 0) {
       await generateCodesForProduct(savedProduct._id, savedProduct.stock);
     }
-
+ 
     if (req.files.images && req.files.images.length > 0) {
       for (let i = 0; i < req.files.images.length; i++) {
         const file = req.files.images[i];
         const fileName = generateFileName(file.originalname, savedProduct._id, i);
-
+ 
         try {
           const imageUrl = await uploadFileToGCS(file, fileName);
           mediaItems.push({
@@ -76,18 +86,22 @@ router.post('/', protect, isAdmin, upload.fields([{ name: 'images', maxCount: 10
     }
     if (req.files.videos && req.files.videos.length > 0) {
       const videoCount = Math.min(req.files.videos.length, 2);
-      
+ 
       for (let i = 0; i < videoCount; i++) {
         const file = req.files.videos[i];
         const videoFileName = `products/${savedProduct._id}/videos/${Date.now()}_${i}.mp4`;
-
+ 
+        // NUEVO: toma el flag de este video específico, default true si no llegó
+        const shouldProcess = videoProcessFlags[i] !== undefined ? videoProcessFlags[i] : true;
+ 
         try {
           const { rawVideoUrl, processing } = await processAndUploadVideo(
-            file, 
-            videoFileName, 
-            savedProduct._id
+            file,
+            videoFileName,
+            savedProduct._id,
+            shouldProcess // NUEVO
           );
-          
+ 
           mediaItems.push({
             type: 'video',
             url: rawVideoUrl,
@@ -104,7 +118,7 @@ router.post('/', protect, isAdmin, upload.fields([{ name: 'images', maxCount: 10
     savedProduct.images = mediaItems.filter(m => m.type === 'image').map(m => m.url);
     savedProduct.media = mediaItems;
     await savedProduct.save();
-
+ 
     res.status(201).json(savedProduct);
   } catch (error) {
     console.error('Error creating product:', error);
@@ -121,7 +135,10 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
 router.get('/featured', getFeaturedProducts);
+
+router.get('/search', searchProducts);
 // Obtener producto por ID
 router.get('/:id', async (req, res) => {
   try {
@@ -142,6 +159,16 @@ router.put('/:id', protect, isAdmin, upload.fields([
     const product = await Product.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ error: 'Producto no encontrado' });
+    }
+
+    // NUEVO: parsear los flags de "procesar o no" que manda el admin
+    let videoProcessFlags = [];
+    if (req.body.videoProcessFlags) {
+      try {
+        videoProcessFlags = JSON.parse(req.body.videoProcessFlags);
+      } catch (e) {
+        console.error('videoProcessFlags inválido:', e.message);
+      }
     }
 
     // 1. ACTUALIZAR CAMPOS BÁSICOS (sin tocar media)
@@ -196,19 +223,22 @@ router.put('/:id', protect, isAdmin, upload.fields([
     // 4. AGREGAR NUEVOS VIDEOS (sin borrar los existentes)
     if (req.files?.videos && req.files.videos.length > 0) {
       const videoCount = Math.min(req.files.videos.length, 2);
-      
+
       for (let i = 0; i < videoCount; i++) {
         const file = req.files.videos[i];
         const videoFileName = `products/${product._id}/videos/${Date.now()}_${i}.mp4`;
 
+        // NUEVO: toma el flag de este video específico, default true si no llegó
+        const shouldProcess = videoProcessFlags[i] !== undefined ? videoProcessFlags[i] : true;
+
         try {
           const { rawVideoUrl, processing } = await processAndUploadVideo(
-            file, 
-            videoFileName, 
-            product._id
+            file,
+            videoFileName,
+            product._id,
+            shouldProcess // NUEVO: se lo pasa a la función
           );
-          
-          // PUSH (agregar) en vez de reemplazar
+
           product.media.push({
             type: 'video',
             url: rawVideoUrl,
@@ -218,8 +248,8 @@ router.put('/:id', protect, isAdmin, upload.fields([
             processing: processing,
             uploadedAt: new Date()
           });
-          
-          console.log(`Nuevo video agregado: ${videoFileName}`);
+
+          console.log(`Nuevo video agregado: ${videoFileName} (procesar: ${shouldProcess})`);
         } catch (uploadError) {
           console.error('Error uploading new video:', uploadError);
         }

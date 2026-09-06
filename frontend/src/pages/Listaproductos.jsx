@@ -326,24 +326,31 @@ const Listaproductos = () => {
   };
 
   return (
-    <div className="bg-white/30 backdrop-blur-md rounded-xl shadow-lg border border-white/40 p-6">
-      <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
-        <h1 className="text-2xl font-semibold text-gray-800">Lista de Productos</h1>
+    <div className="relative bg-transparent backdrop-blur-md rounded-[20px] shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] shadow-[#000000]/70 p-6 overflow-hidden"
+      style={{ fontFamily: '"Urbanist", sans-serif' }}>
+      {/* Manchas de luz neón difuminadas */}
+      <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#FF137A] opacity-40 blur-[120px]" />
+      <div className="pointer-events-none absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-[#00FF37] opacity-40 blur-[120px]" />
+ 
+      <div className="relative flex justify-between items-center mb-6 flex-wrap gap-4">
+        <h1 className="font-haze uppercase text-2xl tracking-wide text-white pl-1">
+          Lista de <span className="text-[#00FF37]">Productos</span>
+        </h1>
         <div className="flex items-center gap-3 flex-wrap">
           {/* Search input */}
           <div className="relative w-60 max-w-full">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-            <input 
-              type="text" 
-              placeholder="Buscar producto" 
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" size={18} />
+            <input
+              type="text"
+              placeholder="Buscar producto"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+              className="w-full pl-10 pr-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-sm font-Urbanist text-white placeholder-white/40 focus:outline-none focus:border-[#00FF37]/50 focus:shadow-[0_0_12px_-2px_#00FF37] transition-colors"
             />
           </div>
-          <button 
+          <button
             onClick={() => setPdfReady(true)}
-            className="px-4 py-2 bg-white border border-gray-200 rounded-md text-gray-600 hover:bg-gray-50 transition flex items-center gap-2"
+            className="px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-sm font-Urbanist text-white/80 hover:bg-white/20 hover:scale-105 transform transition-colors duration-200 flex items-center gap-2"
           >
             <Download size={18} />
             Exportar
@@ -366,32 +373,35 @@ const Listaproductos = () => {
             </PDFDownloadLink>
           </div>
         )}
-
-          <a href='/newproduct' className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-md hover:shadow-lg transition transform hover:-translate-y-0.5">
+ 
+          <a
+            href='/newproduct'
+            className="flex items-center gap-2 px-4 py-2 bg-black/50 backdrop-blur-md border border-[#00FF37]/40 rounded-full text-sm font-Urbanist text-white shadow-[0_0_12px_-2px_#00FF37] hover:scale-105 transform transition-colors duration-200"
+          >
             <Plus size={18} />
             Agregar Producto
           </a>
         </div>
       </div>
-      
+ 
       {/* Products Table */}
       {loading ? (
-        <p className="text-gray-600">Cargando productos...</p>
+        <p className="relative text-white/60 font-Urbanist">Cargando productos...</p>
       ) : error ? (
-        <p className="text-red-600">{error}</p>
+        <p className="relative text-[#FF137A] font-Urbanist">{error}</p>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden backdrop-filter backdrop-blur-lg">
+        <div className="relative bg-black/40 rounded-[20px] border border-white/20 overflow-hidden backdrop-blur-md">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Imagen</th>
-                  <th className="text-left py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Codigo del producto</th>
-                  <th className="text-left py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Nombre del producto</th>
-                  <th className="text-left py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Categoría</th>
-                  <th className="text-left py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Stock</th>
-                  <th className="text-left py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Estado</th>
-                  <th className="text-left py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Precio</th>
+                <tr className="border-b border-white/10">
+                  <th className="sm:text-center md:text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Imagen</th>
+                  <th className="text-center py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Codigo del producto</th>
+                  <th className="text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Nombre del producto</th>
+                  <th className="text-center py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Categoría</th>
+                  <th className="text-center py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Stock</th>
+                  <th className="sm:text-center md:text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Estado</th>
+                  <th className="sm:text-center md:text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Precio</th>
                   <th className="py-4 px-5"></th>
                 </tr>
               </thead>
@@ -399,33 +409,36 @@ const Listaproductos = () => {
                 {currentProducts.map((product) => {
                   const statusStyles = getStatusStyles(product.stock);
                   return (
-                    <tr key={product._id} className="border-b border-gray-200 last:border-0 hover:bg-gray-50">
+                    <tr key={product._id} className="border-b border-white/10 last:border-0 hover:bg-white/5 transition-colors">
                       <td className="py-2 px-5">
                       {product.displayImageUrl && (
-                        <img src={product.displayImageUrl} alt={product.name} className="w-22 h-22 object-cover rounded-full" />  
+                        <img src={product.displayImageUrl} alt={product.name} className="w-16 h-16 object-cover rounded-full border border-white/20" />
                       )}
                       </td>
-                      <td className="py-4 px-5 font-medium text-gray-800">{product.code}</td>
-                      <td className="py-4 px-5 font-medium text-gray-800">{product.name}</td>
-                      <td className="py-4 px-5 text-gray-700">{product.category}</td>
-                      <td className="py-4 px-5 text-gray-700">{product.stock}</td>
+                      <td className="py-4 px-5 font-Urbanist font-medium text-center text-white/80">{product.code}</td>
+                      <td className="py-4 px-5 font-Urbanist font-medium text-white">{product.name}</td>
+                      <td className="py-4 px-5 font-Urbanist text-center text-white/70">{product.category}</td>
+                      <td className="py-4 px-5 font-Urbanist text-center text-white/70">{product.stock}</td>
                       <td className="py-4 px-5">
-                        <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${statusStyles.containerClass}`}>
+                        <div className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-Urbanist font-medium border ${statusStyles.containerClass}`}>
                           <span className={`mr-1.5 text-lg ${statusStyles.dotClass}`}>•</span>
                           {statusStyles.status}
                         </div>
                       </td>
-                      <td className="py-4 px-5 font-medium text-gray-800">${Number(product.price).toLocaleString('en-US')}</td>  
+                      <td className="py-4 px-5 font-Urbanist font-medium text-white">${Number(product.price).toLocaleString('en-US')}</td>
                       <td className="py-4 px-5">
                         <div className="flex justify-end gap-2">
-                        <button 
+                        <button
                           onClick={() => window.location.href = `/modproducto/${product._id}`}
-                          className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-500 hover:border-indigo-500 hover:text-indigo-500 hover:bg-indigo-50 transition"
+                          className="w-8 h-8 flex items-center justify-center rounded-full border border-white/20 text-white/60 hover:border-[#00FF37]/50 hover:text-[#00FF37] hover:bg-[#00FF37]/10 hover:scale-105 transform transition-colors duration-200"
                         >
                           <Edit size={16} />
                         </button>
-                          <button onClick={() => handleDeleteProduct(product._id)} className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-500 hover:border-red-500 hover:text-red-500 hover:bg-red-50 transition">
-                            <Trash2 size={16} /> 
+                          <button
+                            onClick={() => handleDeleteProduct(product._id)}
+                            className="w-8 h-8 flex items-center justify-center rounded-full border border-white/20 text-white/60 hover:border-[#FF137A]/50 hover:text-[#FF137A] hover:bg-[#FF137A]/10 hover:scale-105 transform transition-colors duration-200"
+                          >
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </td>
@@ -437,16 +450,16 @@ const Listaproductos = () => {
           </div>
         </div>
       )}
-      
-      <div className="px-4 py-3 flex items-center justify-between border-t ">
-        <div className="flex-1 flex justify-between sm:hidden ">
+ 
+      <div className="relative px-4 py-3 flex items-center justify-between border-t border-white/10 mt-2">
+        <div className="flex-1 flex justify-between sm:hidden">
           <button
             onClick={() => handleChangePage(pagination.currentPage - 1)}
             disabled={pagination.currentPage === 1}
-            className={`relative inline-flex items-center px-4 py-2 text-sm font-medium ${
-              pagination.currentPage === 1 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                : 'bg-white text-gray-700 hover:bg-gray-50'
+            className={`relative inline-flex items-center px-4 py-2 rounded-full text-sm font-Urbanist font-medium border transition-colors ${
+              pagination.currentPage === 1
+                ? 'border-white/10 text-white/20 cursor-not-allowed'
+                : 'border-white/20 text-white/70 hover:bg-white/10'
             }`}
           >
             Previous
@@ -454,10 +467,10 @@ const Listaproductos = () => {
           <button
             onClick={() => handleChangePage(pagination.currentPage + 1)}
             disabled={pagination.currentPage === pagination.totalPages}
-            className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-              pagination.currentPage === pagination.totalPages 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                : 'bg-white text-gray-700 hover:bg-gray-50'
+            className={`ml-3 relative inline-flex items-center px-4 py-2 rounded-full text-sm font-Urbanist font-medium border transition-colors ${
+              pagination.currentPage === pagination.totalPages
+                ? 'border-white/10 text-white/20 cursor-not-allowed'
+                : 'border-white/20 text-white/70 hover:bg-white/10'
             }`}
           >
             Next
@@ -465,48 +478,48 @@ const Listaproductos = () => {
         </div>
         <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm text-gray-700">
+            <p className="text-sm font-Urbanist text-white/60">
               Mostrando{" "}
-              <span className="font-medium">{pagination.currentPage}</span> de{" "}
-              <span className="font-medium">{pagination.totalPages}</span> productos
+              <span className="font-medium text-white/90">{pagination.currentPage}</span> de{" "}
+              <span className="font-medium text-white/90">{pagination.totalPages}</span> productos
             </p>
           </div>
           <div>
-            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px " aria-label="Pagination">
+            <nav className="relative z-0 inline-flex items-center gap-1.5" aria-label="Pagination">
               <button
                 onClick={() => handleChangePage(pagination.currentPage - 1)}
                 disabled={pagination.currentPage === 1}
-                className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 text-sm font-medium  ${
-                  pagination.currentPage === 1 
-                    ? 'text-gray-300 cursor-not-allowed' 
-                    : 'text-gray-500 hover:bg-gray-50'
+                className={`relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-colors ${
+                  pagination.currentPage === 1
+                    ? 'border-white/10 text-white/20 cursor-not-allowed'
+                    : 'border-white/20 text-white/70 hover:bg-white/10'
                 }`}
               >
                 <span className="sr-only">Previous</span>
                 <ChevronLeft size={16} />
               </button>
-
+ 
               {[...Array(pagination.totalPages).keys()].map((page) => (
                 <button
                   key={page + 1}
                   onClick={() => handleChangePage(page + 1)}
-                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                  className={`relative inline-flex items-center justify-center w-9 h-9 rounded-full border text-sm font-Urbanist font-medium transition-colors ${
                     pagination.currentPage === page + 1
-                      ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                      ? 'bg-white/10 border-[#00FF37]/50 text-[#00FF37] shadow-[0_0_12px_-2px_#00FF37]'
+                      : 'border-white/20 text-white/60 hover:bg-white/10'
                   }`}
                 >
                   {page + 1}
                 </button>
               ))}
-
+ 
               <button
                 onClick={() => handleChangePage(pagination.currentPage + 1)}
                 disabled={pagination.currentPage === pagination.totalPages}
-                className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                  pagination.currentPage === pagination.totalPages 
-                    ? 'text-gray-300 cursor-not-allowed' 
-                    : 'text-gray-500 hover:bg-gray-50'
+                className={`relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-colors ${
+                  pagination.currentPage === pagination.totalPages
+                    ? 'border-white/10 text-white/20 cursor-not-allowed'
+                    : 'border-white/20 text-white/70 hover:bg-white/10'
                 }`}
               >
                 <span className="sr-only">Next</span>

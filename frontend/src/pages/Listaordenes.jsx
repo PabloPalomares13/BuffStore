@@ -324,13 +324,20 @@ const Listaordenes = () => {
   };
 
   return (
-    <div className="bg-white/30 backdrop-blur-md rounded-xl shadow-lg border border-white/40 p-6">
-      <div className="flex justify-between items-center p-6 border-b">
-        <h1 className="text-2xl font-semibold text-gray-800">Lista de Ordenes</h1>
-        <div className="flex space-x-2">
-        <button 
+    <div className="relative bg-transparent backdrop-blur-md rounded-[20px] shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] shadow-[#000000]/70 p-6 overflow-hidden"
+      style={{ fontFamily: '"Urbanist", sans-serif' }}>
+      {/* Manchas de luz neón difuminadas */}
+      <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#FF137A] opacity-40 blur-[120px]" />
+      <div className="pointer-events-none absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-[#00FF37] opacity-40 blur-[120px]" />
+
+      <div className="relative flex justify-between items-center p-6 border-b border-white/10 flex-wrap gap-4">
+        <h1 className="font-haze uppercase text-2xl tracking-widest text-white">
+          Lista de <span className="text-[#00FF37]">Ordenes</span>
+        </h1>
+        <div className="flex items-center gap-3 flex-wrap">
+        <button
           onClick={() => setPdfReady(true)}
-          className="px-4 py-2 flex items-center text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+          className="px-4 py-2 flex items-center text-sm font-Urbanist text-white/80 bg-white/10 backdrop-blur-md border border-white/20 rounded-full hover:bg-white/20 hover:scale-105 transform transition-colors duration-200"
         >
           <Download size={16} className="mr-2" />
           Exportar Lista
@@ -352,59 +359,59 @@ const Listaordenes = () => {
             </PDFDownloadLink>
           </div>
         )}
-          <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <div className="relative w-60 max-w-full">
+            <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" />
             <input
               type="text"
               placeholder="Buscar"
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full pl-10 pr-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-sm font-Urbanist text-white placeholder-white/40 focus:outline-none focus:border-[#00FF37]/50 focus:shadow-[0_0_12px_-2px_#00FF37] transition-colors"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
         </div>
       </div>
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden backdrop-filter backdrop-blur-lg">
-        <div className="overflow-x-auto rounded-xl ">
-          <table className="w-full ">
+      <div className="relative bg-black/40 rounded-[20px] border border-white/20 overflow-hidden backdrop-blur-md mt-4">
+        <div className="overflow-x-auto">
+          <table className="w-full">
             <thead>
-              <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                <th className="text-left py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Numero Orden</th>
-                <th className="text-left py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Fecha Order</th>
-                <th className="text-left py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Comprador</th>
-                <th className="text-left py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="text-left py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Digitos Tarjeta</th>
-                <th className="text-left py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Total</th>
-                <th className="text-left py-4 px-5 text-xs font-semibold text-gray-500 uppercase tracking-wider">Actiones</th>
+              <tr className="border-b border-white/10">
+                <th className="text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Numero Orden</th>
+                <th className="text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Fecha Order</th>
+                <th className="text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Comprador</th>
+                <th className="text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Status</th>
+                <th className="text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Digitos Tarjeta</th>
+                <th className="text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Total</th>
+                <th className="text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Actiones</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-white/10">
               {currentOrders.map((order) => (
-                <tr key={order._id} className="hover:bg-gray-50">
-                  <td className="p-4 font-medium text-gray-900">#{order._id}</td>
-                  <td className="p-4 text-gray-500">{new Date(order.updatedAt).toLocaleDateString('es-CO')}</td>
+                <tr key={order._id} className="hover:bg-white/5 transition-colors">
+                  <td className="p-4 font-Urbanist font-medium text-white">#{order._id}</td>
+                  <td className="p-4 font-Urbanist text-white/60">{new Date(order.updatedAt).toLocaleDateString('es-CO')}</td>
                   <td className="p-4">
-                    <div className="font-medium text-gray-900">{order.customer.fullName}</div>
+                    <div className="font-Urbanist font-medium text-white">{order.customer.fullName}</div>
                   </td>
                   <td className="p-4">
                     {renderStatus(order.status)}
                   </td>
-                  <td className="p-4">
+                  <td className="p-4 font-Urbanist text-white/60">
                     {order.payment?.cardLast4}
                   </td>
-                  <td className="p-4 font-medium text-gray-900">${(order.totals.total).toLocaleString('en-US')}</td>
+                  <td className="p-4 font-Urbanist font-medium text-white">${(order.totals.total).toLocaleString('en-US')}</td>
                   <td className="p-4">
-                    <div className="flex space-x-2">
-                      <button 
+                    <div className="flex gap-2">
+                      <button
                         onClick={() => handleViewOrder(order._id)}
-                        className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-500 hover:border-indigo-500 hover:text-indigo-500 hover:bg-indigo-50 transition"
+                        className="w-8 h-8 flex items-center justify-center rounded-full border border-white/20 text-white/60 hover:border-[#00FF37]/50 hover:text-[#00FF37] hover:bg-[#00FF37]/10 hover:scale-105 transform transition-colors duration-200"
                         title="View Order"
                       >
                         <Eye size={18} />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleDeleteOrder(order._id)}
-                        className="w-8 h-8 flex items-center justify-center rounded-md border border-gray-200 text-gray-500 hover:border-red-500 hover:text-red-500 hover:bg-red-50 transition"
+                        className="w-8 h-8 flex items-center justify-center rounded-full border border-white/20 text-white/60 hover:border-[#FF137A]/50 hover:text-[#FF137A] hover:bg-[#FF137A]/10 hover:scale-105 transform transition-colors duration-200"
                         title="Delete Order"
                       >
                         <Trash size={18} />
@@ -418,15 +425,15 @@ const Listaordenes = () => {
         </div>
       </div>
 
-      <div className="px-4 py-3 flex items-center justify-between border-t ">
-        <div className="flex-1 flex justify-between sm:hidden ">
+      <div className="relative px-4 py-3 flex items-center justify-between border-t border-white/10 mt-2">
+        <div className="flex-1 flex justify-between sm:hidden">
           <button
             onClick={() => handleChangePage(pagination.currentPage - 1)}
             disabled={pagination.currentPage === 1}
-            className={`relative inline-flex items-center px-4 py-2 text-sm font-medium ${
-              pagination.currentPage === 1 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                : 'bg-white text-gray-700 hover:bg-gray-50'
+            className={`relative inline-flex items-center px-4 py-2 rounded-full text-sm font-Urbanist font-medium border transition-colors ${
+              pagination.currentPage === 1
+                ? 'border-white/10 text-white/20 cursor-not-allowed'
+                : 'border-white/20 text-white/70 hover:bg-white/10'
             }`}
           >
             Previous
@@ -434,10 +441,10 @@ const Listaordenes = () => {
           <button
             onClick={() => handleChangePage(pagination.currentPage + 1)}
             disabled={pagination.currentPage === pagination.totalPages}
-            className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
-              pagination.currentPage === pagination.totalPages 
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                : 'bg-white text-gray-700 hover:bg-gray-50'
+            className={`ml-3 relative inline-flex items-center px-4 py-2 rounded-full text-sm font-Urbanist font-medium border transition-colors ${
+              pagination.currentPage === pagination.totalPages
+                ? 'border-white/10 text-white/20 cursor-not-allowed'
+                : 'border-white/20 text-white/70 hover:bg-white/10'
             }`}
           >
             Next
@@ -445,20 +452,20 @@ const Listaordenes = () => {
         </div>
         <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm text-gray-700">
-              Showing <span className="font-medium">{indexOfFirst + 1}</span> to <span className="font-medium">{Math.min(indexOfLast, totalFiltered)}</span> of{' '}
-              <span className="font-medium">{totalFiltered}</span> results
+            <p className="text-sm font-Urbanist text-white/60">
+              Showing <span className="font-medium text-white/90">{indexOfFirst + 1}</span> to <span className="font-medium text-white/90">{Math.min(indexOfLast, totalFiltered)}</span> of{' '}
+              <span className="font-medium text-white/90">{totalFiltered}</span> results
             </p>
           </div>
           <div>
-            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px " aria-label="Pagination">
+            <nav className="relative z-0 inline-flex items-center gap-1.5" aria-label="Pagination">
               <button
                 onClick={() => handleChangePage(pagination.currentPage - 1)}
                 disabled={pagination.currentPage === 1}
-                className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 text-sm font-medium  ${
-                  pagination.currentPage === 1 
-                    ? 'text-gray-300 cursor-not-allowed' 
-                    : 'text-gray-500 hover:bg-gray-50'
+                className={`relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-colors ${
+                  pagination.currentPage === 1
+                    ? 'border-white/10 text-white/20 cursor-not-allowed'
+                    : 'border-white/20 text-white/70 hover:bg-white/10'
                 }`}
               >
                 <span className="sr-only">Previous</span>
@@ -469,10 +476,10 @@ const Listaordenes = () => {
                 <button
                   key={page + 1}
                   onClick={() => handleChangePage(page + 1)}
-                  className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                  className={`relative inline-flex items-center justify-center w-9 h-9 rounded-full border text-sm font-Urbanist font-medium transition-colors ${
                     pagination.currentPage === page + 1
-                      ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
-                      : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                      ? 'bg-white/10 border-[#00FF37]/50 text-[#00FF37] shadow-[0_0_12px_-2px_#00FF37]'
+                      : 'border-white/20 text-white/60 hover:bg-white/10'
                   }`}
                 >
                   {page + 1}
@@ -482,10 +489,10 @@ const Listaordenes = () => {
               <button
                 onClick={() => handleChangePage(pagination.currentPage + 1)}
                 disabled={pagination.currentPage === pagination.totalPages}
-                className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
-                  pagination.currentPage === pagination.totalPages 
-                    ? 'text-gray-300 cursor-not-allowed' 
-                    : 'text-gray-500 hover:bg-gray-50'
+                className={`relative inline-flex items-center justify-center w-9 h-9 rounded-full border transition-colors ${
+                  pagination.currentPage === pagination.totalPages
+                    ? 'border-white/10 text-white/20 cursor-not-allowed'
+                    : 'border-white/20 text-white/70 hover:bg-white/10'
                 }`}
               >
                 <span className="sr-only">Next</span>

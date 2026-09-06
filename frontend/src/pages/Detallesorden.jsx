@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Download, Mail, Phone } from 'lucide-react';
+import { ArrowLeft, Download, Mail, Phone,AlertCircle } from 'lucide-react';
 import { PDFDownloadLink, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import logobuff from '../assets/logobuff0033.png';
 
@@ -445,19 +445,7 @@ const Detallesorden = () => {
     );
   }
 
-  if (!order) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <h2 className="text-2xl font-semibold text-red-600 mb-4">Pedido no encontrado</h2>
-        <button 
-          onClick={handleGoBack}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-        >
-          Volver a la lista de pedidos
-        </button>
-      </div>
-    );
-  }
+ 
 
   // Status badge renderer
   const renderStatusBadge = (status) => {
@@ -488,107 +476,138 @@ const Detallesorden = () => {
     });
   };
 
-  return (
-    <div className="bg-white/30 backdrop-blur-md rounded-xl shadow-lg border border-white/40 p-6">
-      {/* Header Seccion */}
-      <div className="flex justify-between items-center p-6 border-b">
-        <div className="flex items-center">
-          <button 
+  if (!order) {
+    return (
+      <div className="relative bg-transparent backdrop-blur-md rounded-[20px] shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] shadow-[#000000]/70 p-6 overflow-hidden"
+      style={{ fontFamily: '"Urbanist", sans-serif' }}>
+        <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#FF137A] opacity-40 blur-[120px]" />
+        <div className="pointer-events-none absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-[#00FF37] opacity-40 blur-[120px]" />
+ 
+        <div className="relative flex flex-col items-center justify-center text-center py-16 px-6">
+          <div className="w-14 h-14 rounded-full border border-[#FF137A]/40 bg-black/60 backdrop-blur-md flex items-center justify-center mb-4 shadow-[0_0_12px_-2px_#FF137A]">
+            <AlertCircle size={28} className="text-[#FF137A]" />
+          </div>
+          <h2 className="font-haze uppercase text-xl text-white mb-2">Orden no encontrada</h2>
+          <p className="text-sm font-Urbanist text-white/60 max-w-sm mb-6">
+            No pudimos encontrar la información de esta orden. Puede que el enlace sea incorrecto o que la orden ya no exista.
+          </p>
+          <button
             onClick={handleGoBack}
-            className="mr-4 p-2 rounded-full hover:bg-gray-100"
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-md border border-white/20 rounded-full text-sm font-Urbanist text-white/80 hover:bg-white/20 hover:scale-105 transform transition-colors duration-200"
+          >
+            <ArrowLeft size={16} />
+            Volver a la lista de órdenes
+          </button>
+        </div>
+      </div>
+    );
+  }
+ 
+  return (
+    <div className="relative bg-transparent backdrop-blur-md rounded-[20px] shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] shadow-[#000000]/70 p-6 overflow-hidden"
+      style={{ fontFamily: '"Urbanist", sans-serif' }}>
+      {/* Manchas de luz neón difuminadas */}
+      <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#FF137A] opacity-40 blur-[120px]" />
+      <div className="pointer-events-none absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-[#00FF37] opacity-40 blur-[120px]" />
+ 
+      {/* Header Seccion */}
+      <div className="relative flex justify-between items-center p-6 border-b border-white/10 flex-wrap gap-4">
+        <div className="flex items-center">
+          <button
+            onClick={handleGoBack}
+            className="mr-4 w-10 h-10 flex items-center justify-center rounded-full border border-white/20 text-white/70 hover:bg-white/10 hover:scale-105 transform transition-colors duration-200"
           >
             <ArrowLeft size={20} />
           </button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-semibold text-gray-800">
-                Orden #{order._id}
+              <h1 className="font-haze uppercase text-2xl tracking-wide text-white">
+                Orden <h2 style={{ fontFamily: '"Urbanist", sans-serif' }} className="text-xl uppercase text-white break-all">#{order._id}</h2> 
               </h1>
               {renderStatusBadge(order.status)}
             </div>
-            <p className="text-gray-500 mt-1">{formatDate(order.createdAt)}</p>
+            <p className="text-sm font-Urbanist text-white/60 mt-1">{formatDate(order.createdAt)}</p>
           </div>
         </div>
         <div>
-          <button 
+          <button
             onClick={handleDownloadReceipt}
-            className="px-4 py-2 flex items-center text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+            className="px-4 py-2 flex items-center text-sm font-Urbanist text-white/80 bg-white/10 backdrop-blur-md border border-white/20 rounded-full hover:bg-white/20 hover:scale-105 transform transition-colors duration-200"
           >
             <Download size={16} className="mr-2" />
             Descargar Recibo
           </button>
         </div>
       </div>
-
+ 
       {/* Main Content */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+      <div className="relative grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
         {/* Customer Information */}
         <div className="col-span-1">
-          <div className="bg-white/50 rounded-xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-lg font-medium text-gray-800 mb-4">Información del Comprador</h2>
+          <div className="bg-black/40 backdrop-blur-md rounded-[20px] border border-white/20 p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Información del Comprador</h2>
             <div className="flex items-center mb-4">
-              <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center mr-4">
-                <span className="text-gray-600 font-medium">{order.customer.fullName.charAt(0)}</span>
+              <div className="w-12 h-12 rounded-full border border-white/20 bg-white/10 flex items-center justify-center mr-4">
+                <span className="text-white/80 font-medium">{order.customer?.fullName?.charAt(0)}</span>
               </div>
               <div>
-                <h3 className="font-medium text-gray-900">{order.customer.fullName}</h3>
+                <h3 className="font-Urbanist font-medium text-white">{order.customer?.fullName}</h3>
               </div>
             </div>
-            <div className="flex items-center text-gray-600 mb-2">
-              <Mail size={16} className="mr-2" />
-              <a href={`mailto:${order.customer.email}`} className="text-blue-600 hover:underline">
-                {order.customer.email}
+            <div className="flex items-center text-white/60 mb-2 font-Urbanist text-sm">
+              <Mail size={16} className="mr-2 text-white/40" />
+              <a href={`mailto:${order.customer?.email}`} className="text-[#00FF37] hover:underline">
+                {order.customer?.email}
               </a>
             </div>
-            <div className="flex items-center text-gray-600">
-              <Phone size={16} className="mr-2" />
-              <a href={`tel:${order.customer.phone}`} className="text-blue-600 hover:underline">
-                {order.customer.phone}
+            <div className="flex items-center text-white/60 font-Urbanist text-sm">
+              <Phone size={16} className="mr-2 text-white/40" />
+              <a href={`tel:${order.customer?.phone}`} className="text-[#00FF37] hover:underline">
+                {order.customer?.phone}
               </a>
             </div>
           </div>
-
-          <div className="bg-white/50 rounded-xl shadow-sm border border-gray-100 p-6 mt-4">
-            <h2 className="text-lg font-medium text-gray-800 mb-4">Dirección de Facturación</h2>
-            <address className="not-italic text-gray-600">
-              {order.shipping.address}<br />
-              {order.shipping.city}, {order.shipping.state} <br />{order.shipping.zipCode}
+ 
+          <div className="bg-black/40 backdrop-blur-md rounded-[20px] border border-white/20 p-6 mt-4">
+            <h2 className="text-lg font-semibold text-white mb-4">Dirección de Facturación</h2>
+            <address className="not-italic font-Urbanist text-white/60 text-sm">
+              {order.shipping?.address}<br />
+              {order.shipping?.city}, {order.shipping?.state} <br />{order.shipping?.zipCode}
             </address>
           </div>
-
-          <div className="bg-white/50 rounded-xl shadow-sm border border-gray-100 p-6 mt-4">
-            <h2 className="text-lg font-medium text-gray-800 mb-4">Información de Pago</h2>
-            <div className="text-gray-600">
-              <p>Nombre en tarjeta: {order.payment.cardName}</p>
-              <p>Últimos 4 dígitos: **** **** **** {order.payment.cardLast4}</p>
+ 
+          <div className="bg-black/40 backdrop-blur-md rounded-[20px] border border-white/20 p-6 mt-4">
+            <h2 className="text-lg font-semibold text-white mb-4">Información de Pago</h2>
+            <div className="font-Urbanist text-white/60 text-sm space-y-1">
+              <p>Nombre en tarjeta: {order.payment?.cardName}</p>
+              <p>Últimos 4 dígitos: **** **** **** {order.payment?.cardLast4}</p>
             </div>
           </div>
         </div>
-
+ 
         {/* Order Details */}
         <div className="col-span-1 md:col-span-2">
-          <div className="bg-white/50 rounded-xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-lg font-medium text-gray-800 mb-4">Productos</h2>
+          <div className="bg-black/40 backdrop-blur-md rounded-[20px] border border-white/20 p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Productos</h2>
             <div className="overflow-x-auto">
               <table className="min-w-full">
                 <thead>
-                  <tr className="border-b">
-                    <th className="py-3 px-4 text-left font-medium text-gray-500 uppercase tracking-wider">Producto</th>
-                    <th className="py-3 px-4 text-left font-medium text-gray-500 uppercase tracking-wider">Precio</th>
-                    <th className="py-3 px-4 text-left font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
-                    <th className="py-3 px-4 text-right font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                  <tr className="border-b border-white/10">
+                    <th className="py-3 px-4 text-left font-Urbanist font-medium text-white/50 uppercase tracking-wider text-xs">Producto</th>
+                    <th className="py-3 px-4 text-left font-Urbanist font-medium text-white/50 uppercase tracking-wider text-xs">Precio</th>
+                    <th className="py-3 px-4 text-left font-Urbanist font-medium text-white/50 uppercase tracking-wider text-xs">Cantidad</th>
+                    <th className="py-3 px-4 text-right font-Urbanist font-medium text-white/50 uppercase tracking-wider text-xs">Total</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {order.products.map((item, index) => (
-                    <tr key={index} className="border-b">
+                  {order.products?.map((item, index) => (
+                    <tr key={index} className="border-b border-white/10 last:border-0">
                       <td className="py-4 px-4">
                         <div className="flex items-center">
-                          <div className="h-16 w-16 bg-gray-100 rounded-md flex items-center justify-center overflow-hidden mr-4">
-                            {/* Placeholder para la imagen del producto */}
+                          <div className="h-16 w-16 bg-white/10 border border-white/20 rounded-full flex items-center justify-center overflow-hidden mr-4">
                             <img
                               src={
-                                item.productDetails?.images?.[0] || 
+                                item.productDetails?.images?.[0] ||
                                 `${link}/api/products/image/${item.productId}/0`
                               }
                               alt={item.name}
@@ -600,13 +619,13 @@ const Detallesorden = () => {
                             />
                           </div>
                           <div>
-                            <h3 className="font-medium text-gray-900">{item.name}</h3>
+                            <h3 className="font-Urbanist font-medium text-white">{item.name}</h3>
                           </div>
                         </div>
                       </td>
-                      <td className="py-4 px-4 text-gray-700">${item.price.toFixed(2)}</td>
-                      <td className="py-4 px-4 text-gray-700">{item.quantity}</td>
-                      <td className="py-4 px-4 text-right text-gray-900 font-medium">
+                      <td className="py-4 px-4 font-Urbanist text-white/70">${item.price.toFixed(2)}</td>
+                      <td className="py-4 px-4 font-Urbanist text-white/70">{item.quantity}</td>
+                      <td className="py-4 px-4 text-right font-Urbanist text-white font-medium">
                         ${(item.price * item.quantity).toFixed(2)}
                       </td>
                     </tr>
@@ -615,29 +634,29 @@ const Detallesorden = () => {
               </table>
             </div>
           </div>
-
-          <div className="bg-white/50 rounded-xl shadow-sm border border-gray-100 p-6 mt-4">
-            <h2 className="text-lg font-medium text-gray-800 mb-4">Resumen del Pago</h2>
-            <div className="space-y-2">
+ 
+          <div className="bg-black/40 backdrop-blur-md rounded-[20px] border border-white/20 p-6 mt-4">
+            <h2 className="text-lg font-semibold text-white mb-4">Resumen del Pago</h2>
+            <div className="space-y-2 font-Urbanist">
               <div className="flex justify-between">
-                <span className="text-gray-600">Subtotal</span>
-                <span className="text-gray-800">${order.totals.subtotal.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                <span className="text-white/60">Subtotal</span>
+                <span className="text-white/80">${order.totals?.subtotal?.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Impuestos</span>
-                <span className="text-gray-800">${order.totals.taxes.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                <span className="text-white/60">Impuestos</span>
+                <span className="text-white/80">${order.totals?.taxes?.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
               </div>
-              <div className="border-t pt-2 mt-2">
+              <div className="border-t border-white/10 pt-2 mt-2">
                 <div className="flex justify-between font-medium">
-                  <span className="text-gray-800">Total</span>
-                  <span className="text-gray-900">${order.totals.total.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
+                  <span className="text-white">Total</span>
+                  <span className="text-[#00FF37]">${order.totals?.total?.toLocaleString('en-US', {minimumFractionDigits: 2})}</span>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-
+ 
       {/* PDF Download Component - Solo se renderiza cuando se solicita */}
       {pdfReady && (
         <div style={{ display: 'none' }}>

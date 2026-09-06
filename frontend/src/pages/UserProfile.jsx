@@ -83,14 +83,6 @@ export default function UserProfile() {
               <Mail className="inline w-4 h-4 text-gray-500 mr-1" />
               {userData.email}
             </p>
-            <p className="text-gray-700">
-              <span className="font-semibold text-gray-900">ID Personal:</span>{" "}
-              {userData.personalID || "No registrado"}
-            </p>
-            <p className="text-gray-700">
-              <span className="font-semibold text-gray-900">Tipo de ID:</span>{" "}
-              {userData.typeID || "No registrado"}
-            </p>
           </div>
 
           <div className="space-y-3">

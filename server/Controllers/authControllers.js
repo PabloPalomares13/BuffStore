@@ -4,7 +4,7 @@ const jwt = require('jsonwebtoken');
 // Generar JWT con rol incluido
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, {
-    expiresIn: '30m' // Token expira en 30 minutos
+    expiresIn: '60m' // Token expira en 30 minutos
   });
 };
 
@@ -13,12 +13,11 @@ const generateToken = (id, role) => {
 // @access  Public
 const registerUser = async (req, res) => {
   try {
-    const { typeID, personalID, email, password } = req.body;
+    const {  email, password } = req.body;
 
     // Verificar si el usuario ya existe
     const userExists = await User.findOne({
-      $or: [{ email }, { personalID }]
-    });
+       email});
 
     if (userExists) {
       return res.status(400).json({
@@ -32,8 +31,6 @@ const registerUser = async (req, res) => {
 
     // Crear nuevo usuario con rol
     const user = await User.create({
-      typeID,
-      personalID,
       email,
       password,
       role
@@ -42,8 +39,6 @@ const registerUser = async (req, res) => {
     if (user) {
       res.status(201).json({
         _id: user._id,
-        typeID: user.typeID,
-        personalID: user.personalID,
         email: user.email,
         role: user.role,
         token: generateToken(user._id, user.role)
@@ -70,8 +65,6 @@ const loginUser = async (req, res) => {
     if (user && (await user.comparePassword(password))) {
       res.json({
         _id: user._id,
-        typeID: user.typeID,
-        personalID: user.personalID,
         email: user.email,
         role: user.role,
         token: generateToken(user._id, user.role)
@@ -95,8 +88,6 @@ const getUserProfile = async (req, res) => {
     if (user) {
       res.json({
         _id: user._id,
-        typeID: user.typeID,
-        personalID: user.personalID,
         email: user.email,
         role: user.role
       });

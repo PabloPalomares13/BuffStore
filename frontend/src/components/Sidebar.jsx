@@ -1,61 +1,74 @@
 import React from 'react';
 import { Home, Package, Edit, Plus, ShoppingBag, FileText } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
-
+import logo from '../assets/BLogo4k-white.png'
+ 
 const Sidebar = ({ isOpen }) => {
   const location = useLocation();
   const currentPath = location.pathname;
-
+ 
   return (
-    <div 
-      className={`fixed md:relative z-30 h-full transition-all duration-300 ease-in-out ${
-        isOpen 
-          ? "translate-x-0" 
+    <div
+      className={`fixed md:relative z-30 h-full transition-all duration-300 ease-in-out  ${
+        isOpen
+          ? "translate-x-0"
           : "-translate-x-full md:translate-x-0"
       }`}
+      style={{ fontFamily: '"Urbanist", sans-serif' }}
     >
-      <div className="flex flex-col h-full w-64 bg-white/20 backdrop-blur-lg shadow-lg border-r border-white/30 overflow-hidden">
-        <div className="flex items-center justify-center h-16 px-6 mt-2 mb-6">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-pink-500 bg-clip-text text-transparent">DashBoard</h1>
+      <div className="relative flex flex-col h-full w-68 bg-transparent rounded-[20px] rounded shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] shadow-[#000000]/40  overflow-hidden ml-2 my-2">
+        {/* Manchas de luz neón difuminadas */}
+        <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#FF137A] opacity-40 blur-[120px]" />
+        <div className="pointer-events-none absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-[#00FF37] opacity-40 blur-[120px]" />
+ 
+        {/* Marca de agua ambiental (logo/decoración) */}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-50 blur-sm">
+          <img src={logo} alt="logo" />
         </div>
-
-        <nav className="flex-1 px-4 pb-4">
+ 
+        <div className="relative flex items-center justify-center h-16 px-6 mt-8 mb-8 ">
+          <h1 className="font-haze uppercase text-4xl tracking-wide text-white">
+            Dash<span className="text-[#00FF37]">board</span>
+          </h1>
+        </div>
+ 
+        <nav className="relative flex-1 px-4 pb-4 ">
           <div className="space-y-2">
-            <SidebarItem 
-              icon={<Home size={20} />} 
-              text="Dashboard" 
-              to="/Dashboard" 
-              active={currentPath === "/Dashboard"} 
+            <SidebarItem
+              icon={<Home size={20} />}
+              text="Dashboard"
+              to="/dashboard"
+              active={currentPath === "/dashboard" || currentPath === "/"}
             />
-            <SidebarItem 
-              icon={<Package size={20} />} 
-              text="Lista de productos" 
-              to="/ListaProductos" 
-              active={currentPath === "/ListaProductos"} 
+            <SidebarItem
+              icon={<Package size={20} />}
+              text="Lista de productos"
+              to="/ListaProductos"
+              active={currentPath === "/ListaProductos"}
             />
-            <SidebarItem 
-              icon={<Edit size={20} />} 
-              text="Modificación de productos" 
-              to="/ModProducto" 
-              active={currentPath === "/ModProducto"} 
+            <SidebarItem
+              icon={<Edit size={20} />}
+              text="Modificación de productos"
+              to="/ModProducto"
+              active={currentPath === "/ModProducto"}
             />
-            <SidebarItem 
-              icon={<Plus size={20} />} 
-              text="Nuevo producto" 
-              to="/NewProduct" 
-              active={currentPath === "/NewProduct"} 
+            <SidebarItem
+              icon={<Plus size={20} />}
+              text="Nuevo producto"
+              to="/NewProduct"
+              active={currentPath === "/NewProduct"}
             />
-            <SidebarItem 
-              icon={<ShoppingBag size={20} />} 
-              text="Lista de Ordenes" 
-              to="/listaordenes" 
-              active={currentPath === "/listaordenes"} 
+            <SidebarItem
+              icon={<ShoppingBag size={20} />}
+              text="Lista de Ordenes"
+              to="/listaordenes"
+              active={currentPath === "/listaordenes"}
             />
-            <SidebarItem 
-              icon={<FileText size={20} />} 
-              text="Detalles de pedido" 
-              to="/Detallesorden" 
-              active={currentPath === "/Detallesorden"} 
+            <SidebarItem
+              icon={<FileText size={20} />}
+              text="Detalles de pedido"
+              to="/Detallesorden"
+              active={currentPath === "/Detallesorden"}
             />
           </div>
         </nav>
@@ -63,24 +76,34 @@ const Sidebar = ({ isOpen }) => {
     </div>
   );
 };
-
-// Component for sidebar items
+ 
+// Item individual del sidebar
 const SidebarItem = ({ icon, text, to, active = false }) => {
   return (
     <a
       href={to}
-      className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
-        active 
-          ? "bg-gradient-to-r from-blue-500/20 to-pink-500/20 text-gray-800" 
-          : "text-gray-700 hover:bg-white/30"
+      className={`group flex items-center w-full h-15 px-4 rounded-lg border transition-colors hover:scale-105 transform duration-200 ${
+        active
+          ? "bg-white/10 backdrop-blur-md border-[#00FF37]/40 shadow-[0_0_12px_-2px_#00FF37]"
+          : "bg-transparent border-white/20 hover:bg-white/10 hover:backdrop-blur-md"
       }`}
     >
-      <span className={`${active ? "text-blue-600" : "text-gray-600"}`}>
+      <span
+        className={`transition-colors ${
+          active ? "text-[#00FF37]" : "text-white font-semibold group-hover:text-[#FF137A]"
+        }`}
+      >
         {icon}
       </span>
-      <span className="ml-3 font-medium">{text}</span>
+      <span
+        className={`ml-3 font-Urbanist text-sm truncate ${
+        active ? "text-white font-semibold" : "text-white font-semibold"
+        }`}
+      >
+        {text}
+      </span>
     </a>
   );
 };
-
+ 
 export default Sidebar;

@@ -9,6 +9,7 @@ import Listaproductos from './pages/Listaproductos';
 import Modproducto from './pages/Modproducto';
 import Listaordenes from './pages/Listaordenes';
 import Detallesorden from './pages/Detallesorden';
+import FavoritesPage from './pages/FavoritesPage';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Checkout from './pages/Checkout';
@@ -42,6 +43,7 @@ function App() {
       <Route path="/checkout/pending" element={<ProtectedRoute><CheckoutPending /></ProtectedRoute>} />
       <Route path="/product/:id" element={<ProductDetail />} />
       <Route path="/UserProfile" element={<ProtectedRoute requiredRoles={["user", "admin"]}><UserProfile /></ProtectedRoute>} />
+      <Route path="/favorites" element={<FavoritesPage /> } />
     </Route>
 
       
