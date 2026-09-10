@@ -190,36 +190,51 @@ const captureImage = async () => {
 
       return (
         <div className="fixed bottom-12 right-4 z-50">
+ 
           {/* Botón para abrir el chat */}
           {!isOpen && (
             <button
               onClick={toggleChat}
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-4 shadow-lg flex items-center justify-center"
+              className="relative rounded-full p-4 flex items-center justify-center
+                bg-black/70 backdrop-blur-xl border border-white/20
+                shadow-[0_0_20px_rgba(255,19,122,0.45)]
+                transition-all hover:scale-105 hover:shadow-[0_0_28px_rgba(0,255,55,0.5)]"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
             </button>
           )}
-    
+ 
           {/* Ventana del chat */}
           {isOpen && (
-            <div className={`bg-white rounded-lg shadow-xl flex flex-col ${isExpanded ? 'w-96 h-128' : 'w-80 h-96'} transition-all duration-300`}>
+            <div
+              className={`bg-black/80 backdrop-blur-xl border border-white/20 rounded-[20px]
+                shadow-[0_0_40px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden
+                ${isExpanded ? 'w-96 h-128' : 'w-80 h-96'} transition-all duration-300`}
+            >
               {/* Cabecera del chat */}
-              <div className="bg-blue-600 text-white p-3 rounded-t-lg flex justify-between items-center">
-                <h3 className="font-medium">Asistente BuffStore</h3>
-                <div className="flex gap-2">
-                  <button onClick={toggleExpand} className="hover:bg-blue-700 rounded-full p-1">
+              <div className="bg-white/10 backdrop-blur-xl border-b border-white/10 text-white p-3 flex justify-between items-center">
+                <h3 className="font-haze uppercase tracking-wide text-sm">Asistente BuffStore</h3>
+                <div className="flex gap-1">
+                  <button
+                    onClick={toggleExpand}
+                    className="rounded-full p-1 text-white/70 transition-colors hover:text-white hover:bg-white/10"
+                  >
                     {isExpanded ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
                   </button>
-                  <button onClick={toggleChat} className="hover:bg-blue-700 rounded-full p-1">
+                  <button
+                    onClick={toggleChat}
+                    className="rounded-full p-1 text-white/70 transition-colors hover:text-white hover:bg-white/10"
+                  >
                     <X size={18} />
                   </button>
                 </div>
               </div>
-    
+ 
               {/* Cuerpo del chat */}
               <div className="flex-1 p-3 overflow-y-auto">
+ 
                 {/* Ventana de la cámara */}
                 {isCameraOpen && (
                   <div className="mb-4 relative">
@@ -227,12 +242,13 @@ const captureImage = async () => {
                       ref={videoRef}
                       autoPlay
                       playsInline
-                      className="w-full h-64 bg-black rounded-lg"
+                      className="w-full h-64 bg-black rounded-[20px] border border-white/10"
                     />
-                    <div className="absolute bottom-2 left-0 right-0 flex justify-center">
+                    <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-2">
                       <button
                         onClick={captureImage}
-                        className="bg-red-500 hover:bg-red-600 text-white rounded-full p-3 mx-2"
+                        className="rounded-full p-3 border border-[#FF137A]/50 bg-black/70 backdrop-blur-xl
+                          text-white transition-all hover:scale-105 hover:shadow-[0_0_16px_rgba(255,19,122,0.55)]"
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -241,74 +257,76 @@ const captureImage = async () => {
                       </button>
                       <button
                         onClick={toggleCamera}
-                        className="bg-gray-500 hover:bg-gray-600 text-white rounded-full p-3 mx-2"
+                        className="rounded-full p-3 border border-white/20 bg-black/70 backdrop-blur-xl
+                          text-white/80 transition-colors hover:text-white hover:border-white/40"
                       >
                         <X size={24} />
                       </button>
                     </div>
                   </div>
                 )}
-    
-                {/* Mensajes de interaccion */}
+ 
+                {/* Mensajes de interacción */}
                 {messages.map((msg, idx) => (
                   <div
                     key={idx}
                     className={`mb-3 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}
                   >
                     <div
-                      className={`inline-block px-4 py-2 rounded-lg ${
+                      className={`inline-block px-4 py-2 rounded-[20px] border font-Urbanist max-w-[80%] ${
                         msg.role === 'user'
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-200 text-gray-800'
-                      } max-w-[80%]`}
+                          ? 'bg-white/10 backdrop-blur-xl border-[#FF137A]/40 text-white'
+                          : 'bg-white/5 backdrop-blur-xl border-white/10 text-white/90'
+                      }`}
                     >
-                      <div className={msg.role === 'bot' ? 'prose prose-sm max-w-none' : ''}> 
-                                     {msg.role === 'bot' ? (
-                                         // Si es del bot, renderiza usando el ReactMarkdown
-                                          <ReactMarkdown>
-                                              {msg.content}
-                                          </ReactMarkdown>
-                                     ) : (
-                                         // Si es del usuario, solo muestra el texto plano 
-                                         <span>{msg.content}</span>
-                                     )}
-                                 </div>
+                      <div className={msg.role === 'bot' ? 'prose prose-sm prose-invert max-w-none' : ''}>
+                        {msg.role === 'bot' ? (
+                          // Si es del bot, renderiza usando ReactMarkdown
+                          <ReactMarkdown>
+                            {msg.content}
+                          </ReactMarkdown>
+                        ) : (
+                          // Si es del usuario, solo muestra el texto plano
+                          <span>{msg.content}</span>
+                        )}
+                      </div>
                     </div>
                     {msg.image && (
                       <div className="mt-2 max-w-[80%] ml-auto">
-                        <img 
-                          src={msg.image} 
-                          alt="Imagen capturada" 
-                          className="rounded-lg w-full h-auto"
+                        <img
+                          src={msg.image}
+                          alt="Imagen capturada"
+                          className="rounded-[20px] border border-white/10 w-full h-auto"
                         />
                       </div>
                     )}
                   </div>
                 ))}
-    
+ 
                 {/* Indicador de carga */}
                 {isLoading && (
                   <div className="text-left mb-3">
-                    <div className="inline-block px-4 py-2 rounded-lg bg-gray-200">
+                    <div className="inline-block px-4 py-2 rounded-[20px] border border-white/10 bg-white/5 backdrop-blur-xl">
                       <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-                        <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                        <div className="w-2 h-2 bg-[#00FF37] rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
+                        <div className="w-2 h-2 bg-[#00FF37] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="w-2 h-2 bg-[#00FF37] rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
                       </div>
                     </div>
                   </div>
                 )}
-    
+ 
                 <div ref={messagesEndRef} />
               </div>
-    
+ 
               {/* Formulario de entrada */}
-              <form onSubmit={handleSubmit} className="p-3 border-t">
+              <form onSubmit={handleSubmit} className="p-3 border-t border-white/10">
                 <div className="flex space-x-2">
                   <button
                     type="button"
                     onClick={toggleCamera}
-                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-full p-2 flex-shrink-0"
+                    className="rounded-full p-2 flex-shrink-0 border border-white/20 bg-white/5 backdrop-blur-xl
+                      text-white transition-all hover:scale-105 hover:border-[#00FF37]/50 hover:shadow-[0_0_12px_rgba(0,255,55,0.45)]"
                   >
                     <Camera size={20} />
                   </button>
@@ -317,15 +335,17 @@ const captureImage = async () => {
                     value={input}
                     onChange={handleInputChange}
                     placeholder="Escribe un mensaje..."
-                    className="flex-1 border border-gray-300 rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    className="flex-1 rounded-full px-4 py-2 border border-white/20 bg-white/5 backdrop-blur-xl
+                      text-white font-Urbanist placeholder-white/40 outline-none transition-colors
+                      focus:border-[#00FF37]/60 focus:shadow-[0_0_12px_rgba(0,255,55,0.4)]"
                   />
                   <button
                     type="submit"
                     disabled={isLoading || !input.trim()}
-                    className={`rounded-full p-2 flex-shrink-0 ${
+                    className={`rounded-full p-2 flex-shrink-0 border transition-all ${
                       isLoading || !input.trim()
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        ? 'border-white/10 bg-white/5 text-white/30 cursor-not-allowed'
+                        : 'border-[#FF137A]/50 bg-white/10 backdrop-blur-xl text-white hover:scale-105 hover:shadow-[0_0_16px_rgba(255,19,122,0.5)]'
                     }`}
                   >
                     <Send size={20} />
@@ -337,5 +357,5 @@ const captureImage = async () => {
         </div>
       );
     };
-    
+ 
     export default ChatBot;

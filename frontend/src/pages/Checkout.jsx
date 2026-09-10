@@ -326,278 +326,315 @@ const handlePaymentError = (error) => {
 
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 pt-28">
-    <div className="max-w-6xl mx-auto px-4">
-      
-
-      <div className="mb-8">
-        <div className="flex items-center justify-center">
-          <div className={`flex items-center ${step >= 1 ? 'text-blue-600' : 'text-gray-400'}`}>
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 
-              ${step >= 1 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300'}`}>
-              1
+    <div className="min-h-screen bg-black py-12 pt-28 relative overflow-hidden">
+ 
+      {/* Manchas de luz ambientales */}
+      <div className="pointer-events-none absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full bg-[#FF137A] opacity-40 blur-[120px]" />
+      <div className="pointer-events-none absolute -bottom-40 -left-40 w-[500px] h-[500px] rounded-full bg-[#00FF37] opacity-40 blur-[120px]" />
+ 
+      {/* Logo como marca de agua ambiental */}
+      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-10 blur-sm select-none">
+        <span className="font-haze uppercase text-[140px] leading-none text-white tracking-wider">
+          GG
+        </span>
+      </div>
+ 
+      <div className="max-w-6xl mx-auto px-4 relative z-10">
+ 
+        {/* Stepper */}
+        <div className="mb-8">
+          <div className="flex items-center justify-center">
+            <div className={`flex items-center ${step >= 1 ? 'text-white' : 'text-white/40'}`}>
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center border transition-colors
+                  ${step >= 1
+                    ? 'border-[#FF137A]/60 bg-white/10 backdrop-blur-xl shadow-[0_0_16px_rgba(255,19,122,0.55)]'
+                    : 'border-white/20 bg-white/5 backdrop-blur-xl'}`}
+              >
+                1
+              </div>
+              <span className="ml-2 font-haze uppercase tracking-wide text-sm hidden sm:inline">Resumen</span>
             </div>
-            <span className="ml-2 font-medium hidden sm:inline">Resumen</span>
-          </div>
-
-          {/* Línea conectora */}
-          <div className={`w-24 h-1 mx-4 ${step >= 2 ? 'bg-blue-600' : 'bg-gray-300'}`} />
-
-          {/* Paso 2 */}
-          <div className={`flex items-center ${step >= 2 ? 'text-blue-600' : 'text-gray-400'}`}>
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 
-              ${step >= 2 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300'}`}>
-              2
+ 
+            <div className={`w-24 h-px mx-4 ${step >= 2 ? 'bg-white/40' : 'bg-white/10'}`} />
+ 
+            <div className={`flex items-center ${step >= 2 ? 'text-white' : 'text-white/40'}`}>
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center border transition-colors
+                  ${step >= 2
+                    ? 'border-[#FF137A]/60 bg-white/10 backdrop-blur-xl shadow-[0_0_16px_rgba(255,19,122,0.55)]'
+                    : 'border-white/20 bg-white/5 backdrop-blur-xl'}`}
+              >
+                2
+              </div>
+              <span className="ml-2 font-haze uppercase tracking-wide text-sm hidden sm:inline">Pago</span>
             </div>
-            <span className="ml-2 font-medium hidden sm:inline">Pago</span>
-          </div>
-
-          {/* Línea conectora */}
-          <div className={`w-24 h-1 mx-4 ${step >= 3 ? 'bg-blue-600' : 'bg-gray-300'}`} />
-
-          {/* Paso 3 */}
-          <div className={`flex items-center ${step >= 3 ? 'text-blue-600' : 'text-gray-400'}`}>
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 
-              ${step >= 3 ? 'border-blue-600 bg-blue-600 text-white' : 'border-gray-300'}`}>
-              3
+ 
+            <div className={`w-24 h-px mx-4 ${step >= 3 ? 'bg-white/40' : 'bg-white/10'}`} />
+ 
+            <div className={`flex items-center ${step >= 3 ? 'text-white' : 'text-white/40'}`}>
+              <div
+                className={`w-10 h-10 rounded-full flex items-center justify-center border transition-colors
+                  ${step >= 3
+                    ? 'border-[#00FF37]/60 bg-white/10 backdrop-blur-xl shadow-[0_0_16px_rgba(0,255,55,0.55)]'
+                    : 'border-white/20 bg-white/5 backdrop-blur-xl'}`}
+              >
+                3
+              </div>
+              <span className="ml-2 font-haze uppercase tracking-wide text-sm hidden sm:inline">Confirmación</span>
             </div>
-            <span className="ml-2 font-medium hidden sm:inline">Confirmación</span>
           </div>
         </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Columna principal */}
-        <div className="lg:col-span-2">
-          
-          {step === 1 && (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-2xl font-bold mb-6">Resumen del pedido</h2>
-
-            <div className="space-y-4 mb-6">
-              {cart.map((item) => (
-                <div
-                  key={item._id}
-                  className="flex items-center gap-4 border-b pb-4"
-                >
-              {item.displayImageUrl && (
-                <img
-                  src={item.displayImageUrl}
-                  alt={item.name}
-                  className="w-20 h-20 object-cover rounded"
+ 
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+ 
+          {/* Columna principal */}
+          <div className="lg:col-span-2">
+ 
+            {step === 1 && (
+              <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] p-6">
+                <h2 className="font-haze uppercase tracking-wide text-2xl text-white mb-6">Resumen del pedido</h2>
+ 
+                <div className="space-y-4 mb-6">
+                  {cart.map((item) => (
+                    <div
+                      key={item._id}
+                      className="flex items-center gap-4 border-b border-white/10 pb-4"
+                    >
+                      {item.displayImageUrl && (
+                        <img
+                          src={item.displayImageUrl}
+                          alt={item.name}
+                          className="w-20 h-20 object-cover rounded-[20px] border border-white/10"
+                        />
+                      )}
+ 
+                      {/* Info del producto */}
+                      <div className="flex-1">
+                        <h3 className="font-Urbanist font-semibold text-white">{item.name}</h3>
+ 
+                        {/* Controles de cantidad */}
+                        <div className="flex items-center mt-2">
+                          <button
+                            onClick={() => decrementQuantity(item._id)}
+                            className="w-8 h-8 flex items-center justify-center rounded-full border border-white/20
+                              bg-white/5 backdrop-blur-xl text-white transition-colors hover:scale-105
+                              hover:border-[#FF137A]/60 hover:shadow-[0_0_12px_rgba(255,19,122,0.5)]"
+                          >
+                            -
+                          </button>
+ 
+                          <span className="w-10 h-8 flex items-center justify-center font-Urbanist text-white/90">
+                            {item.quantity}
+                          </span>
+ 
+                          <button
+                            onClick={() => incrementQuantity(item._id)}
+                            disabled={item.quantity >= item.stock}
+                            className="w-8 h-8 flex items-center justify-center rounded-full border border-white/20
+                              bg-white/5 backdrop-blur-xl text-white transition-colors hover:scale-105
+                              hover:border-[#00FF37]/60 hover:shadow-[0_0_12px_rgba(0,255,55,0.5)]
+                              disabled:opacity-30 disabled:hover:scale-100 disabled:hover:shadow-none"
+                          >
+                            +
+                          </button>
+ 
+                          <span className="ml-2 text-sm font-Urbanist text-white/40">
+                            ({item.stock} disponibles)
+                          </span>
+                        </div>
+                      </div>
+ 
+                      {/* Precio y eliminar */}
+                      <div className="text-right">
+                        <p className="font-Urbanist font-semibold text-white">
+                          ${(item.price * item.quantity).toLocaleString("es-CO")}
+                        </p>
+                        <p className="text-sm font-Urbanist text-white/50">
+                          ${item.price.toLocaleString("es-CO")} c/u
+                        </p>
+ 
+                        <button
+                          onClick={() => removeProduct(item._id)}
+                          className="text-sm mt-2 font-Urbanist text-[#FF137A] transition-colors
+                            hover:text-[#FF137A] hover:drop-shadow-[0_0_6px_rgba(255,19,122,0.7)]"
+                        >
+                          Eliminar
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+ 
+                {/* Formulario de contacto */}
+                <form onSubmit={handleSubmit}>
+                  <h3 className="font-haze uppercase tracking-wide text-lg text-white mb-4">Información de contacto</h3>
+                  <div className="space-y-4">
+                    <input
+                      type="text"
+                      name="fullName"
+                      placeholder="Nombre completo"
+                      value={formData.fullName}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-2 rounded-full border border-white/20 bg-white/5 backdrop-blur-xl
+                        text-white font-Urbanist placeholder-white/40 outline-none transition-colors
+                        focus:border-[#00FF37]/60 focus:shadow-[0_0_12px_rgba(0,255,55,0.4)]"
+                    />
+                    <input
+                      type="email"
+                      name="email"
+                      placeholder="Email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-2 rounded-full border border-white/20 bg-white/5 backdrop-blur-xl
+                        text-white font-Urbanist placeholder-white/40 outline-none transition-colors
+                        focus:border-[#00FF37]/60 focus:shadow-[0_0_12px_rgba(0,255,55,0.4)]"
+                    />
+                    <input
+                      type="tel"
+                      name="phone"
+                      placeholder="Teléfono"
+                      value={formData.phone}
+                      onChange={handleInputChange}
+                      required
+                      className="w-full px-4 py-2 rounded-full border border-white/20 bg-white/5 backdrop-blur-xl
+                        text-white font-Urbanist placeholder-white/40 outline-none transition-colors
+                        focus:border-[#00FF37]/60 focus:shadow-[0_0_12px_rgba(0,255,55,0.4)]"
+                    />
+                  </div>
+ 
+                  <button
+                    type="submit"
+                    disabled={loading || cart.length === 0}
+                    className="w-full mt-6 py-3 rounded-full font-haze uppercase tracking-wide text-white
+                      border border-[#00FF37]/50 bg-white/10 backdrop-blur-xl transition-all
+                      hover:scale-105 hover:shadow-[0_0_20px_rgba(0,255,55,0.5)]
+                      disabled:opacity-30 disabled:hover:scale-100 disabled:hover:shadow-none disabled:cursor-not-allowed"
+                  >
+                    {loading ? 'Procesando...' : 'Continuar al pago'}
+                  </button>
+                </form>
+              </div>
+            )}
+ 
+            {step === 2 && order && (
+              <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] p-6">
+                <h2 className="font-haze uppercase tracking-wide text-2xl text-white mb-6">Realizar pago</h2>
+ 
+                <div className="mb-6">
+                  <p className="font-Urbanist text-white/60 mb-2">
+                    Orden: <span className="font-semibold text-white">#{order._id?.slice(-8)}</span>
+                  </p>
+                  <p className="font-Urbanist text-2xl font-bold text-white">
+                    Total: ${total.toLocaleString('es-CO')} COP
+                  </p>
+                </div>
+ 
+                {/* Componente de Mercado Pago */}
+                <MercadoPagoCheckout
+                  orderId={order._id}
+                  onSuccess={handlePaymentSuccess}
+                  onError={handlePaymentError}
                 />
-              )}
-
-              {/* Info del producto */}
-              <div className="flex-1">
-                <h3 className="font-semibold">{item.name}</h3>
-
-                {/* Controles de cantidad */}
-                <div className="flex items-center mt-2">
-                  <button
-                    onClick={() => decrementQuantity(item._id)}
-                    className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-l-md border border-gray-300"
-                  >
-                    -
-                  </button>
-
-                  <span className="w-10 h-8 flex items-center justify-center border-t border-b border-gray-300">
-                    {item.quantity}
-                  </span>
-
-                  <button
-                    onClick={() => incrementQuantity(item._id)}
-                    className="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-r-md border border-gray-300"
-                    disabled={item.quantity >= item.stock}
-                  >
-                    +
-                  </button>
-
-                  <span className="ml-2 text-sm text-gray-500">
-                    ({item.stock} disponibles)
-                  </span>
-                </div>
-              </div>
-
-              {/* Precio y eliminar */}
-              <div className="text-right">
-                <p className="font-semibold">
-                  ${(item.price * item.quantity).toLocaleString("es-CO")}
-                </p>
-                <p className="text-sm text-gray-600">
-                  ${item.price.toLocaleString("es-CO")} c/u
-                </p>
-
+ 
                 <button
-                  onClick={() => removeProduct(item._id)}
-                  className="text-red-500 text-sm mt-2 hover:text-red-700"
+                  onClick={() => setStep(1)}
+                  className="w-full mt-4 rounded-full border border-white/20 bg-white/5 backdrop-blur-xl
+                    text-white/80 font-Urbanist py-2 transition-colors hover:border-white/40 hover:text-white"
                 >
-                  Eliminar
+                  ← Volver al resumen
                 </button>
               </div>
-            </div>
-          ))}
-        </div>
-
-              {/* Tu formulario actual - QUITAR campos de tarjeta */}
-              <form onSubmit={handleSubmit}>
-                <h3 className="text-lg font-semibold mb-4">Información de contacto</h3>
-                <div className="space-y-4">
-                  <input
-                    type="text"
-                    name="fullName"
-                    placeholder="Nombre completo"
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                  <input
-                    type="email"
-                    name="email"
-                    placeholder="Email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                  <input
-                    type="tel"
-                    name="phone"
-                    placeholder="Teléfono"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
+            )}
+ 
+            {step === 3 && (
+              <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] p-8 text-center">
+                <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4
+                  border border-[#00FF37]/50 bg-white/10 backdrop-blur-xl shadow-[0_0_24px_rgba(0,255,55,0.5)]">
+                  <svg className="w-10 h-10 text-[#00FF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
                 </div>
-
+                <h2 className="font-haze uppercase tracking-wide text-3xl text-[#00FF37] drop-shadow-[0_0_10px_rgba(0,255,55,0.6)] mb-4">
+                  ¡Pago exitoso!
+                </h2>
+                <p className="font-Urbanist text-white/60 mb-6">
+                  Tu pedido ha sido procesado correctamente.
+                  <br />
+                  Los códigos de tus juegos están disponibles en tu perfil.
+                </p>
                 <button
-                  type="submit"
-                  disabled={loading || cart.length === 0}
-                  className="w-full mt-6 bg-blue-600 text-white py-3 rounded-lg font-semibold
-                    hover:bg-blue-700 transition disabled:bg-gray-300 disabled:cursor-not-allowed"
+                  onClick={() => navigate('/Userprofile')}
+                  className="rounded-full px-8 py-3 font-haze uppercase tracking-wide text-white
+                    border border-[#FF137A]/50 bg-white/10 backdrop-blur-xl transition-all
+                    hover:scale-105 hover:shadow-[0_0_20px_rgba(255,19,122,0.5)]"
                 >
-                  {loading ? 'Procesando...' : 'Continuar al pago'}
+                  Ver mis productos
                 </button>
-              </form>
-            </div>
-          )}
-
-          {step === 2 && order && (
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-2xl font-bold mb-6">Realizar pago</h2>
-              
-              <div className="mb-6">
-                <p className="text-gray-600 mb-2">
-                  Orden: <span className="font-semibold">#{order._id?.slice(-8)}</span>
-                </p>
-                <p className="text-2xl font-bold text-blue-600">
-                  Total: ${total.toLocaleString('es-CO')} COP
-                </p>
               </div>
-
-              {/* ⬇️ COMPONENTE DE MERCADO PAGO */}
-              <MercadoPagoCheckout
-                orderId={order._id}
-                onSuccess={handlePaymentSuccess}
-                onError={handlePaymentError}
-              />
-
-              <button
-                onClick={() => setStep(1)}
-                className="w-full mt-4 border border-gray-300 text-gray-700 py-2 rounded-lg
-                  hover:bg-gray-50 transition"
-              >
-                ← Volver al resumen
-              </button>
-            </div>
-          )}
-
-          {step === 3 && (
-            <div className="bg-white rounded-lg shadow-md p-8 text-center">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <h2 className="text-3xl font-bold text-green-600 mb-4">¡Pago exitoso!</h2>
-              <p className="text-gray-600 mb-6">
-                Tu pedido ha sido procesado correctamente. 
-                <br />
-                Los códigos de tus juegos están disponibles en tu perfil.
-              </p>
-              <button
-                onClick={() => navigate('/Userprofile')}
-                className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold
-                  hover:bg-blue-700 transition"
-              >
-                Ver mis productos
-              </button>
-            </div>
-          )}
-
-        </div>
-
-        {/* ⬇️ Columna lateral - tu código actual de resumen */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-lg shadow-md p-6 sticky top-4">
-            <h3 className="text-xl font-bold mb-4">Resumen de compra</h3>
-            
-            <div className="space-y-2 mb-4">
-              <div className="flex justify-between text-gray-600">
-                <span>Subtotal</span>
-                <span>${subtotal.toLocaleString('es-CO')}</span>
-              </div>
-              <div className="flex justify-between text-gray-600">
-                <span>Impuestos</span>
-                <span className="font-medium">${taxes.toLocaleString('es-CO')}</span>
-              </div>
-              <div className="border-t pt-2 mt-2">
-                <div className="flex justify-between text-xl font-bold">
-                  <span>Total</span>
-                  <span className="text-blue-600">
-                    ${total.toLocaleString('es-CO')} COP
-                  </span>
+            )}
+ 
+          </div>
+ 
+          {/* Columna lateral - resumen */}
+          <div className="lg:col-span-1">
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] p-6 sticky top-4">
+              <h3 className="font-haze uppercase tracking-wide text-xl text-white mb-4">Resumen de compra</h3>
+ 
+              <div className="space-y-2 mb-4 font-Urbanist">
+                <div className="flex justify-between text-white/60">
+                  <span>Subtotal</span>
+                  <span>${subtotal.toLocaleString('es-CO')}</span>
+                </div>
+                <div className="flex justify-between text-white/60">
+                  <span>Impuestos</span>
+                  <span className="font-medium text-white/80">${taxes.toLocaleString('es-CO')}</span>
+                </div>
+                <div className="border-t border-white/10 pt-2 mt-2">
+                  <div className="flex justify-between text-xl font-bold text-white">
+                    <span>Total</span>
+                    <span>${total.toLocaleString('es-CO')} COP</span>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="text-sm text-gray-500 mb-4">
-              <p className="flex items-center gap-2 mb-2">
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Entrega inmediata
-              </p>
-              <p className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                </svg>
-                Pago 100% seguro
-              </p>
+ 
+              <div className="text-sm font-Urbanist text-white/40 mb-4">
+                <p className="flex items-center gap-2 mb-2">
+                  <svg className="w-5 h-5 text-[#00FF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Entrega inmediata
+                </p>
+                <p className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-[#00FF37]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  Pago 100% seguro
+                </p>
+              </div>
             </div>
           </div>
+ 
         </div>
-
+ 
+        {/* Alerta */}
+        {alert.show && (
+          <div
+            className={`fixed bottom-6 right-6 px-5 py-3 rounded-full font-Urbanist text-white
+              backdrop-blur-xl bg-black/50 border transition-all duration-300 ${
+              alert.type === 'success' ? 'border-[#00FF37]/60 shadow-[0_0_16px_rgba(0,255,55,0.5)]' :
+              alert.type === 'warning' ? 'border-yellow-400/60 shadow-[0_0_16px_rgba(250,204,21,0.4)]' :
+              'border-[#FF137A]/60 shadow-[0_0_16px_rgba(255,19,122,0.5)]'
+            }`}
+          >
+            {alert.message}
+          </div>
+        )}
       </div>
-
-      {/* ⬇️ Alerta - tu código actual */}
-      {alert.show && (
-        <div
-          className={`fixed bottom-6 right-6 px-5 py-3 rounded-lg shadow-lg text-white transition-all duration-300 ${
-            alert.type === 'success' ? 'bg-green-600' : 
-            alert.type === 'warning' ? 'bg-yellow-600' :
-            'bg-red-500'
-          }`}
-        >
-          {alert.message}
-        </div>
-      )}
     </div>
-  </div>
-);
+  );
 };
-
+ 
 export default Checkout;

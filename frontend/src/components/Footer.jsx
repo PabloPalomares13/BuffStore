@@ -1,5 +1,5 @@
 
-import buffarcade from "../assets/BuffArcade.png";
+import buffarcade from "../assets/BS_BG.png";
 import logo from "../assets/BLogo4k-white.png";
 
 

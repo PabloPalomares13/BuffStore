@@ -12,15 +12,15 @@ export const ThreeDMarquee = ({
     const start = colIndex * chunkSize;
     return images.slice(start, start + chunkSize);
   });
-  return (
+ return (
     <div
       className={cn(
-        "mx-auto block h-[600px] overflow-hidden rounded-2xl max-sm:h-100 bg-gradient-to-r from-[#00FF37]/30 via-[#000000] to-[#FF137A]/30",
+        "mx-auto block h-[280px] sm:h-[400px] lg:h-[600px] overflow-hidden rounded-2xl bg-gradient-to-r from-[#00FF37]/30 via-[#000000] to-[#FF137A]/30",
         className,
       )}       
     >
       <div className="flex size-full items-center justify-center">
-        <div className="size-[1720px] shrink-0 scale-50 sm:scale-75 lg:scale-100">
+        <div className="size-[1720px] shrink-0 scale-100">
           
           <div
             style={{
