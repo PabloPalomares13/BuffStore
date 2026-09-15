@@ -5,7 +5,7 @@ import logo from "../assets/BLogo4k-white.png";
 
 export default function Footer() {
     return (
-        <div className='bg-black pt-20'>
+        <div className='bg-black '>
                 <footer className=" w-full  mx-auto text-white pt-8 lg:pt-12 px-4 sm:px-8 md:px-16 lg:px-28 rounded-tl-3xl rounded-tr-3xl overflow-hidden bg-cover bg-center bg-no-repeat " 
                 style={{ backgroundImage: `url(${buffarcade})`, fontFamily: '"Urbanist", sans-serif' }}>
                     <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-6 gap-8 md:gap-12">

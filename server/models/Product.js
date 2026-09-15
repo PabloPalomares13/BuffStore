@@ -1,6 +1,5 @@
-
 const mongoose = require('mongoose');
-
+ 
 const productSchema = new mongoose.Schema({
   name: String,
   code: String,
@@ -29,8 +28,25 @@ const productSchema = new mongoose.Schema({
   },
   featured: { type: Boolean, default: false },
   displayOrder: { type: Number, default: 0 },
+ 
+  type: {
+    type: String,
+    enum: ['digital', 'physical'],
+    default: 'digital'
+  },
+  // --- Metadata de RAWG.io (vía Gemini), agregada para el autocompletado ---
+  rawgId: { type: Number, default: null },
+  releaseDate: { type: String, default: '' },
+  rating: { type: Number, default: null },
+  ratingsCount: { type: Number, default: null },
+  metacritic: { type: Number, default: null },
+  esrbRating: { type: String, default: '' },
+  website: { type: String, default: '' },
+  // Texto libre de plataformas (ej: "PlayStation 5", "Nintendo Switch"),
+  // separado del enum "platforms" de arriba para no romper filtros existentes.
+  platformsFull: { type: [String], default: [] },
 }, {
   timestamps: true
 });
-
+ 
 module.exports = mongoose.model('Product', productSchema);

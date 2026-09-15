@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import RawgSearchBar from '../components/ui/RawgSearchBar';
 import { 
   X,Upload,  Image as ImageIcon, ChevronDown,Video, Bold, Italic, Underline, Link, ListOrdered, ListTree, AlignLeft,Loader2, Trash2
 } from 'lucide-react';
@@ -15,23 +16,36 @@ const Modproducto = () => {
   
   // Form state
   const [productData, setProductData] = useState({
-    name: '',
-    code: '',
-    description: '',
-    price: '',
-    stock: '',
-    taxRate: '',
-    category: '',
-    tags: '',
-    brand: '',
-    vendor: '',
-  });
+      name: '',
+      description: '',
+      price: '',
+      stock: '',
+      taxRate: '',
+      category: '',
+      tags: '', // etiqueta de marketing: Nuevo / Oferta / Destacado
   
-  const [selectedImage, setSelectedImage] = useState(null);
+      brand: '',   // desarrollador (autocompletado desde RAWG "developer")
+      vendor: '',  // distribuidor (autocompletado desde RAWG "publisher")
+  
+      // --- Campos nuevos que vienen de RAWG (vía Gemini) o se llenan a mano ---
+      rawgId: '',        // referencia interna, no se muestra en el form
+      releaseDate: '',
+      rating: '',
+      ratingsCount: '',
+      metacritic: '',
+      esrbRating: '',
+      website: '',
+      genres: '',        // texto separado por comas, ej: "Acción, Aventura"
+      platformsFull: '', // texto separado por comas, ej: "PC, PlayStation 5"
+      rawgTags: '',       // texto separado por comas, ej: "Mundo abierto, Un jugador"
+    });
+  
+  //const [selectedImage, setSelectedImage] = useState(null);
   //const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [currentImages, setCurrentImages] = useState([]);
   
+  //const [currentImages, setCurrentImages] = useState([]);
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverPreview, setCoverPreview] = useState(null);
   const [existingMedia, setExistingMedia] = useState([]);
   const [newImageFiles, setNewImageFiles] = useState([]);
   const [newVideoFiles, setNewVideoFiles] = useState([]);
@@ -43,7 +57,8 @@ const Modproducto = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [previewMedia, setPreviewMedia] = useState(null);
-  
+  const [error, setError] = useState(null);
+
   useEffect(() => {
     if (id) {
       fetchProductData();
@@ -330,6 +345,22 @@ const Modproducto = () => {
             <div className="lg:col-span-2 space-y-6">
 
               <div className="bg-black/40 backdrop-blur-md rounded-[20px] border border-white/20 p-6">
+                <RawgSearchBar
+                  token={localStorage.getItem('token')}
+                  onAutofill={(data) => {
+                    const confirmar = window.confirm(
+                      `Esto va a reemplazar el nombre y la descripción actuales con los datos de "${data.name}" desde RAWG.io. ¿Continuar?`
+                    );
+
+                    if (!confirmar) return;
+
+                    setProductData(prev => ({
+                      ...prev,
+                      name: data.name || prev.name,
+                      description: data.description || prev.description,
+                    }));
+                  }}
+                />
                 <h2 className="text-lg font-semibold mb-2 text-white">Información Básica</h2>
                 <p className="text-sm text-white/60 mb-6">Sección para modificar información del producto</p>
 

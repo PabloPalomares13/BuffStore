@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Loader2,X,Video,  ShoppingCart, Plus, Minus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2,X,CheckCircle,Video,  ShoppingCart, Plus, Minus } from 'lucide-react';
 
 const ProductDetail = () => {
   const { id } = useParams(); // Obtener el ID del producto desde la URL
   const navigate = useNavigate();
 
   const [product, setProduct] = useState(null);
-  const [apiData, setApiData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
@@ -36,50 +35,12 @@ const ProductDetail = () => {
     }
   };
 
-  // Función para obtener datos adicionales de la API externa (por ejemplo, RAWG)
-  const fetchApiData = async (gameName) => {
-    try {
-
-      const apiKey = import.meta.env.VITE_API_GAMES_INFO; 
-      const response = await fetch(
-        `https://api.rawg.io/api/games?key=${apiKey}&search=${encodeURIComponent(gameName)}&page_size=1`
-      );
-      
-      if (!response.ok) return null;
-      
-      const data = await response.json();
-      if (data.results && data.results.length > 0) {
-        const gameData = data.results[0];
-        
-        // Obtener detalles adicionales del juego
-        const detailResponse = await fetch(
-          `https://api.rawg.io/api/games/${gameData.id}?key=${apiKey}`
-        );
-        
-        if (detailResponse.ok) {
-          const detailData = await detailResponse.json();
-          setApiData(detailData);
-          return detailData;
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching API data:', err);
-    }
-    return null;
-  };
-
   // Cargar datos cuando el componente se monta
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     const loadData = async () => {
       setLoading(true);
-      const productData = await fetchProductData();
-      
-      if (productData) {
-        // Obtener datos adicionales de la API usando el nombre del producto
-        await fetchApiData(productData.name);
-      }
-      
+      await fetchProductData();
       setLoading(false);
     };
 
@@ -234,7 +195,6 @@ const ProductDetail = () => {
     <>
       {/* Agregar fuente Outfit al index.html o App.js */}
       <style>{`
-        'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap'
         
         @keyframes rotate-bg {
           0% { transform: rotate(0deg); }
@@ -277,7 +237,8 @@ const ProductDetail = () => {
         }
       `}</style>
 
-      <div className="min-h-screen bg-gradient-to-br from-[#0a0e1a] via-[#141824] to-[#0f1419] py-8 pt-24 relative overflow-x-hidden font-outfit">
+      <div className="min-h-screen bg-gradient-to-br from-[#0a0e1a] via-[#141824] to-[#0f1419] py-8 pt-24 relative overflow-x-hidden font-outfit"
+      style={{ fontFamily: '"Urbanist", sans-serif' }}>
         {/* Fondo animado */}
         <div className="fixed top-[-50%] left-[-50%] w-[200%] h-[200%] pointer-events-none z-0" style={{
           background: 'radial-gradient(circle at 20% 80%, rgba(255, 0, 85, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(0, 217, 255, 0.1) 0%, transparent 50%)',
@@ -383,9 +344,9 @@ const ProductDetail = () => {
               {/* Header del producto */}
               <div className="bg-gradient-to-br from-[#ff0055]/10 to-[#00d9ff]/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-xl">
                 {/* Badge de plataforma */}
-                {product.platform && (
+                {product.platformsFull?.length > 0 && (
                   <span className="inline-block bg-white/10 backdrop-blur-sm border border-white/10 px-4 py-2 rounded-full text-xs font-semibold tracking-wider uppercase mb-4">
-                    🎮 {product.platform}
+                    🎮 {product.platformsFull.join(' / ')}
                   </span>
                 )}
 
@@ -395,14 +356,17 @@ const ProductDetail = () => {
                 </h1>
 
                 {/* Rating */}
-                {apiData?.rating && (
+                {product.rating && (
                   <div className="flex items-center gap-3 py-4 border-t border-b border-white/10">
                     <div className="flex gap-1 text-[#ffaa00] text-xl">
-                      {'★'.repeat(Math.round(apiData.rating))}
-                      {'☆'.repeat(5 - Math.round(apiData.rating))}
+                      {'★'.repeat(Math.round(product.rating))}
+                      {'☆'.repeat(5 - Math.round(product.rating))}
                     </div>
                     <span className="text-gray-400 text-sm">
-                      {apiData.rating}/5 ({apiData.ratings_count || 937} reseñas)
+                      {product.rating}/5 ({product.ratingsCount || 937} reseñas)
+                      {product.metacritic && (
+                        <span className="ml-3 text-[#00d9ff]">Metacritic: {product.metacritic}</span>
+                      )}
                     </span>
                   </div>
                 )}
@@ -552,20 +516,34 @@ const ProductDetail = () => {
                   {activeTab === 'specs' && (
                     <div className="space-y-3 animate-fadeIn">
                       {[
-                        { label: 'Plataforma', value: product.platform || 'PC / Consola' },
-                        { label: 'Género', value: apiData?.genres?.map(g => g.name).join(', ') || product.category },
-                        { label: 'Desarrollador', value: apiData?.developers?.[0]?.name || product.brand || 'N/A' },
-                        { label: 'Fecha de lanzamiento', value: apiData?.released || 'N/A' },
-                        { label: 'Clasificación', value: product.rating || 'PEGI 16 / ESRB Teen' },
+                        { label: 'Plataformas', value: product.platformsFull?.length ? product.platformsFull.join(', ') : 'PC / Consola' },
+                        { label: 'Género', value: product.category || 'N/A' },
+                        { label: 'Desarrollador', value: product.brand || 'N/A' },
+                        { label: 'Publisher', value: product.vendor || 'N/A' },
+                        { label: 'Fecha de lanzamiento', value: product.releaseDate || 'N/A' },
+                        { label: 'Clasificación ESRB', value: product.esrbRating || 'No especificada' },
+                        { label: 'Metacritic', value: product.metacritic ?? 'N/A' },
                         { label: 'Código', value: product.code || 'N/A' },
-                        { label: 'IVA', value: product.taxRate ? `${product.taxRate}%` : '19%' }
+                        { label: 'IVA', value: product.taxRate ? `${product.taxRate}%` : '19%' },
+                        ...(product.website ? [{ label: 'Sitio web oficial', value: product.website, isLink: true }] : [])
                       ].map((spec, idx) => (
                         <div 
                           key={idx}
                           className="flex bg-white/3 backdrop-blur-sm border border-white/10 rounded-xl p-4"
                         >
                           <div className="flex-shrink-0 w-48 font-semibold text-white">{spec.label}</div>
-                          <div className="text-gray-400">{spec.value}</div>
+                          {spec.isLink ? (
+                            <a
+                              href={spec.value}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[#00d9ff] hover:underline truncate"
+                            >
+                              {spec.value}
+                            </a>
+                          ) : (
+                            <div className="text-gray-400">{spec.value}</div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -574,7 +552,7 @@ const ProductDetail = () => {
                   {activeTab === 'reviews' && (
                     <div className="space-y-4 animate-fadeIn">
                       <p className="text-gray-300 leading-relaxed mb-6">
-                        Con más de {apiData?.ratings_count || 937} reseñas positivas, {product.name} ha cautivado a 
+                        Con más de {product.ratingsCount || 937} reseñas positivas, {product.name} ha cautivado a 
                         jugadores de todo el mundo. Los usuarios destacan sus impresionantes gráficos de última generación, 
                         su fluida jugabilidad y una historia emocionante.
                       </p>

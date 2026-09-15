@@ -27,11 +27,58 @@ const upload = multer({
   }
 });
 
+const generateUniqueProductCode = async () => {
+  const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const maxIntentos = 10;
+ 
+  for (let intento = 0; intento < maxIntentos; intento++) {
+    const l1 = letras[Math.floor(Math.random() * letras.length)];
+    const l2 = letras[Math.floor(Math.random() * letras.length)];
+    const numeros = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const code = `${l1}${l2}${numeros}`;
+ 
+    const existe = await Product.findOne({ code }).select('_id').lean();
+    if (!existe) return code;
+  }
+ 
+  // Fallback extremadamente improbable: si en 10 intentos todo chocó,
+  // usa timestamp para garantizar unicidad.
+  return `XX${Date.now().toString().slice(-3)}`;
+};
+ 
 // Crear producto
 router.post('/', protect, isAdmin, upload.fields([{ name: 'images', maxCount: 10 },{ name: 'videos', maxCount: 2 }]), async (req, res) => {
   try {
+    // "tags" y "platformsFull" llegan como JSON.stringify(...) desde el
+    // FormData del frontend (FormData solo puede mandar strings), hay que
+    // parsearlos antes de construir el Product.
+    let tags = [];
+    if (req.body.tags) {
+      try {
+        tags = JSON.parse(req.body.tags);
+      } catch (e) {
+        tags = [req.body.tags];
+      }
+    }
+ 
+    let platformsFull = [];
+    if (req.body.platformsFull) {
+      try {
+        platformsFull = JSON.parse(req.body.platformsFull);
+      } catch (e) {
+        platformsFull = [];
+      }
+    }
+ 
+    // El código SIEMPRE se genera en el backend, nunca se confía en uno
+    // que venga del cliente (req.body.code, si llegara, se ignora).
+    const code = await generateUniqueProductCode();
+ 
     const product = new Product({
       ...req.body,
+      code,
+      tags,
+      platformsFull,
       images: [],
       media: []
     });

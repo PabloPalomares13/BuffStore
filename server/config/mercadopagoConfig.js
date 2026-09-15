@@ -58,16 +58,11 @@ const getNotificationUrls = () => {
 const getDefaultPreferenceConfig = () => {
   return {
     payment_methods: {
-      excluded_payment_methods: [],
-      excluded_payment_types: [],
       installments: 12,
     },
     back_urls: getNotificationUrls(),
     auto_return: 'approved',
     binary_mode: false,
-    expires: true,
-    expiration_date_from: null,
-    expiration_date_to: null,
   };
 };
 

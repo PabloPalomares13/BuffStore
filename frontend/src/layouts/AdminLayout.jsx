@@ -46,7 +46,7 @@ const DashboardLayout = ({ children }) => {
   };
 
   return (
-     <div className="flex h-screen bg-[#232323]">
+     <div className="flex h-screen bg-[#000000]">
       {/* Sidebar Componente */}
       <Sidebar isOpen={isSidebarOpen} />
  

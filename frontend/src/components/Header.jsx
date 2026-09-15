@@ -174,7 +174,7 @@ export default function Header() {
     { name: "Inicio", href: "/" },
     { name: "Juegos", href: "#" },
     { name: "Categorias", href: "#" },
-    { name: "Nosotros", href: "/Dashboard" },
+    { name: "Contactanos", href: "/contactsection" },
   ];
  
   return (

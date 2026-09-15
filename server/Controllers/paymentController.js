@@ -4,6 +4,7 @@ const Payment = require('../models/schemas/Payment');
 const Order = require('../models/Order');
 const GameCode = require('../models/GameCode');
 const User = require('../models/User');
+const { sendOrderCodesEmail } = require('../services/emailService'); // desactivado temporalmente
 
 /**
  * Crear preferencia de pago (inicia el proceso de checkout)
@@ -61,36 +62,34 @@ const createPaymentPreference = async (req, res) => {
     const user = await User.findById(userId);
 
     // 5. Preparar items para Mercado Pago (usando datos ya guardados en order.products)
+    const currency = CURRENCY_CONFIG.CO; // ajusta la key si manejas varios países
     const items = order.products.map(item => ({
       title: item.name || 'Producto',
       quantity: item.quantity || 1,
       unit_price: Number((item.price || 0).toFixed(2)),
-      currency_id: 'COP',
+      currency_id: currency,
     }));
 
-    // 6. Configurar preferencia de pago
+    // 6. Configurar preferencia de pago (defaults + overrides específicos de esta orden)
     const urls = getNotificationUrls();
     console.log('🔗 URLs configuradas:', urls);
 
     const preferenceData = {
       items,
-      payer: {
-        name: user.name || user.username,
-        email: user.email,
-      },
-      back_urls: { // Es back_urls (en plural)
+      back_urls: {
         success: urls.success,
         failure: urls.failure,
         pending: urls.pending,
       },
-      // auto_return: 'approved',
       notification_url: urls.notification,
       external_reference: orderId.toString(),
-      statement_descriptor: 'Buff Store',
-      expires: true,
-      expiration_date_from: new Date().toISOString(),
-      expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
     };
+
+    // Si la URL no es localhost, podemos habilitar auto_return
+    const isLocal = !process.env.FRONTEND_URL || process.env.FRONTEND_URL.includes('localhost');
+    if (!isLocal) {
+      preferenceData.auto_return = 'approved';
+    }
 
     console.log('📤 Enviando preferencia a Mercado Pago...');
 
@@ -172,83 +171,216 @@ const createPaymentPreference = async (req, res) => {
 /**
  * Webhook para recibir notificaciones de Mercado Pago (IPN)
  */
-const handleWebhook = async (req, res) => {
-  try {
-    // Mercado Pago envía el tipo de notificación
-    const { type, data } = req.body;
+/**
+ * Procesa el resultado de un pago ya consultado a Mercado Pago:
+ * actualiza el registro de Payment, marca la orden como pagada y
+ * entrega los códigos digitales si corresponde. La usan tanto el
+ * webhook como el endpoint de verificación manual (fallback para
+ * cuando el webhook de sandbox no llega, ej: merchant_order bloqueado).
+ *
+ * Es idempotente: si el pago ya estaba marcado como 'approved' en
+ * nuestra DB, no vuelve a entregar códigos ni a mandar el correo.
+ */
+const processPaymentResult = async (paymentData) => {
+  console.log('💳 Información del pago:', {
+    id: paymentData.id,
+    status: paymentData.status,
+    status_detail: paymentData.status_detail,
+    external_reference: paymentData.external_reference,
+  });
 
-    console.log('📨 Webhook recibido:', { type, data });
+  const orderId = paymentData.external_reference;
+  const payment = await Payment.findOne({ orderId });
 
-    // Solo procesar notificaciones de pagos
-    if (type !== 'payment') {
-      return res.status(200).send('OK');
-    }
+  if (!payment) {
+    console.error('❌ Pago no encontrado en DB:', orderId);
+    return { ok: false, reason: 'payment_not_found' };
+  }
 
-    // Obtener el ID del pago desde Mercado Pago
-    const paymentId = data.id;
+  // Idempotencia: si ya estaba aprobado, no repetir la entrega/correo
+  if (payment.status === 'approved' && paymentData.status === 'approved') {
+    console.log('ℹ️ Este pago ya había sido procesado como aprobado, se omite.');
+    return { ok: true, alreadyProcessed: true, status: paymentData.status };
+  }
 
-    // Consultar información completa del pago en Mercado Pago
-    const paymentInfo = await mercadopago.payment.findById(paymentId);
-    const paymentData = paymentInfo.body;
+  payment.mercadoPagoId = paymentData.id.toString();
+  payment.status = paymentData.status;
+  payment.statusDetail = paymentData.status_detail;
 
-    console.log('💳 Información del pago:', {
-      id: paymentData.id,
-      status: paymentData.status,
-      status_detail: paymentData.status_detail,
-      external_reference: paymentData.external_reference,
-    });
+  if (paymentData.payment_method_id) {
+    payment.paymentMethod = {
+      type: paymentData.payment_type_id,
+      id: paymentData.payment_method_id,
+      last_four_digits: paymentData.card?.last_four_digits,
+      cardholder_name: paymentData.card?.cardholder?.name,
+    };
+  }
 
-    // Buscar el pago en nuestra DB usando external_reference (orderId)
-    const orderId = paymentData.external_reference;
-    const payment = await Payment.findOne({ orderId });
+  payment.rawResponse = paymentData;
 
-    if (!payment) {
-      console.error('❌ Pago no encontrado en DB:', orderId);
-      return res.status(404).send('Payment not found');
-    }
+  if (paymentData.status === 'approved') {
+    payment.approvedAt = new Date();
+    await payment.save();
 
-    // Actualizar información del pago
-    payment.mercadoPagoId = paymentData.id.toString();
-    payment.status = paymentData.status;
-    payment.statusDetail = paymentData.status_detail;
+    const order = await Order.findById(orderId).populate('products.productId');
 
-    // Guardar método de pago
-    if (paymentData.payment_method_id) {
-      payment.paymentMethod = {
-        type: paymentData.payment_type_id,
-        id: paymentData.payment_method_id,
-        last_four_digits: paymentData.card?.last_four_digits,
-        cardholder_name: paymentData.card?.cardholder?.name,
-      };
-    }
-
-    // Guardar respuesta completa para debugging
-    payment.rawResponse = paymentData;
-
-    // Si el pago fue aprobado
-    if (paymentData.status === 'approved') {
-      payment.approvedAt = new Date();
-      await payment.save();
-
-      // Actualizar la orden
-      const order = await Order.findById(orderId).populate('items.product');
+    // Si la orden ya estaba pagada (ej: el webhook la marcó justo antes
+    // de que el frontend llame al fallback), no la procesamos dos veces
+    if (order.paymentStatus !== 'paid') {
       await order.markAsPaid(payment._id);
-
-      // Entregar productos digitales (códigos de juego)
       await deliverDigitalProducts(order);
-
       console.log('✅ Pago aprobado y productos entregados');
     } else {
-      await payment.save();
-      console.log('⏳ Pago en estado:', paymentData.status);
+      console.log('ℹ️ La orden ya estaba marcada como pagada, se omite entrega duplicada.');
+    }
+  } else {
+    await payment.save();
+    console.log('⏳ Pago en estado:', paymentData.status);
+  }
+
+  return { ok: true, status: paymentData.status };
+};
+
+const handleWebhook = async (req, res) => {
+  // Mercado Pago manda notificaciones en DOS formatos distintos según el flujo:
+  // - Formato nuevo: { type: 'payment', data: { id } } en el body, y a veces
+  //   como query string ?data.id=...&type=payment
+  // - IPN viejo: ?topic=payment|merchant_order&id=... en la query string,
+  //   con un body { resource, topic }
+  const type = req.body?.type || req.query?.type || req.query?.topic;
+  const rawId = req.body?.data?.id || req.query?.['data.id'] || req.query?.id;
+
+  console.log('📨 Webhook recibido:', { type, rawId, query: req.query, body: req.body });
+
+  // Respondemos 200 YA, antes de procesar nada. Mercado Pago espera un ACK
+  // rápido; si tardamos consultando el pago o algo falla del lado nuestro,
+  // no queremos que MP lo interprete como fallo y reintente en bucle.
+  res.status(200).send('OK');
+
+  if (!type || !rawId) {
+    return;
+  }
+
+  // Las notificaciones de tipo merchant_order están bloqueadas por una
+  // política de Mercado Pago en cuentas de prueba/sandbox
+  // (PA_UNAUTHORIZED_RESULT_FROM_POLICIES). No hace falta consultarlas:
+  // Mercado Pago también manda una notificación aparte de type: 'payment'
+  // con toda la info que necesitamos, así que simplemente la ignoramos.
+  if (type === 'merchant_order') {
+    try {
+      const client = new mercadopago.MercadoPagoConfig({
+        accessToken: process.env.MP_ACCESS_TOKEN
+      });
+      const moClient = new mercadopago.MerchantOrder(client);
+      const moData = await moClient.get({ merchantOrderId: rawId });
+
+      console.log('📦 Diagnóstico de Merchant Order [ID:', rawId + ']:');
+      console.log('   - Estado de la orden:', moData.status, `(${moData.order_status})`);
+      console.log('   - Total de pagos asociados:', moData.payments?.length || 0);
+
+      if (moData.payments && moData.payments.length > 0) {
+        moData.payments.forEach((p, idx) => {
+          console.log(`   💳 Intento de pago #${idx + 1}:`, {
+            id: p.id,
+            status: p.status,
+            status_detail: p.status_detail,
+            payment_method_id: p.payment_method_id,
+            transaction_amount: p.transaction_amount
+          });
+        });
+      } else {
+        console.log('   ⚠️ ATENCIÓN: No hay pagos registrados en esta orden (payments: []).');
+        console.log('   👉 Mercado Pago bloqueó el intento en la pantalla de pago antes de crear el pago.');
+        console.log('   Posibles causas:');
+        console.log('      1. Iniciaste sesión con la cuenta Vendedora (autopago bloqueado).');
+        console.log('      2. La sesión previa no se cerró en el navegador de pruebas.');
+        console.log('      3. Los datos de la tarjeta de prueba fueron rechazados por el simulador.');
+      }
+    } catch (moErr) {
+      console.error('⚠️ No se pudo consultar detalle de merchant_order:', moErr.message);
+    }
+    return;
+  } else if (type !== 'payment') {
+    return;
+  }
+
+  try {
+    const client = new mercadopago.MercadoPagoConfig({
+      accessToken: process.env.MP_ACCESS_TOKEN
+    });
+
+    const paymentClient = new mercadopago.Payment(client);
+    const paymentData = await paymentClient.get({ id: rawId });
+
+    console.log('💳 Notificación de Pago Recibida [ID:', rawId + ']:', {
+      status: paymentData.status,
+      status_detail: paymentData.status_detail,
+      payment_method_id: paymentData.payment_method_id,
+      payer_email: paymentData.payer?.email
+    });
+
+    if (paymentData.status !== 'approved') {
+      console.log('⚠️ El pago NO fue aprobado:', {
+        motivo: paymentData.status_detail,
+        mensaje_sugerido: getStatusDetailMessage(paymentData.status_detail)
+      });
     }
 
-    // Responder OK a Mercado Pago
-    res.status(200).send('OK');
+    await processPaymentResult(paymentData);
 
   } catch (error) {
-    console.error('❌ Error en webhook:', error);
-    res.status(500).send('Error');
+    if (error?.status === 404 || error?.cause?.[0]?.code === 2000) {
+      console.log('ℹ️ Pago no encontrado (probablemente simulación de prueba):', rawId);
+      return;
+    }
+    console.error('❌ Error procesando webhook:', error?.message || error);
+  }
+};
+
+// Función auxiliar para traducir status_detail de Mercado Pago
+const getStatusDetailMessage = (statusDetail) => {
+  const messages = {
+    cc_rejected_bad_filled_card_number: 'Número de tarjeta incorrecto',
+    cc_rejected_bad_filled_date: 'Fecha de vencimiento incorrecta',
+    cc_rejected_bad_filled_other: 'Datos de la tarjeta incorrectos',
+    cc_rejected_bad_filled_security_code: 'Código de seguridad (CVV) incorrecto',
+    cc_rejected_call_for_authorize: 'Requiere llamar al banco para autorizar',
+    cc_rejected_card_disabled: 'Tarjeta inhabilitada',
+    cc_rejected_duplicated_payment: 'Pago duplicado',
+    cc_rejected_high_risk: 'Rechazado por prevención de fraude',
+    cc_rejected_insufficient_amount: 'Fondos insuficientes',
+    cc_rejected_invalid_installments: 'Número de cuotas no válido',
+    cc_rejected_max_attempts: 'Superaste el límite de intentos permitidos',
+    cc_rejected_other_reason: 'Rechazado por políticas generales / datos incompatibles',
+  };
+  return messages[statusDetail] || statusDetail;
+};
+
+/**
+ * Fallback para sandbox: el frontend llama esto desde /checkout/success
+ * con el payment_id que Mercado Pago pone en la URL de retorno, por si
+ * el webhook nunca llegó (ej: notificación merchant_order bloqueada).
+ */
+const verifyAndProcessPayment = async (req, res) => {
+  try {
+    const { paymentId } = req.params;
+
+    if (!paymentId) {
+      return res.status(400).json({ success: false, message: 'Falta paymentId' });
+    }
+
+    const client = new mercadopago.MercadoPagoConfig({
+      accessToken: process.env.MP_ACCESS_TOKEN
+    });
+    const paymentClient = new mercadopago.Payment(client);
+    const paymentData = await paymentClient.get({ id: paymentId });
+
+    const result = await processPaymentResult(paymentData);
+
+    res.json({ success: result.ok, status: result.status, reason: result.reason });
+  } catch (error) {
+    console.error('❌ Error verificando pago manualmente:', error);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -258,17 +390,23 @@ const handleWebhook = async (req, res) => {
 const deliverDigitalProducts = async (order) => {
   try {
     const deliveredProducts = [];
+    const codesForEmail = [];
 
-    for (const item of order.items) {
-      const product = item.product;
+    for (const item of order.products) {
+      const product = item.productId;
+
+      if (!product) {
+        console.error('⚠️ Item sin productId poblado, se omite:', item);
+        continue;
+      }
 
       // Solo procesar productos digitales
-      if (product.type === 'game_code' || product.type === 'digital') {
+      // (si el producto es de antes de agregar el campo 'type', se asume digital)
+      if (!product.type || product.type === 'digital') {
         // Buscar códigos disponibles para este producto
         const availableCodes = await GameCode.find({
           product: product._id,
-          status: 'available',
-          used: false
+          status: 'valid'
         }).limit(item.quantity);
 
         if (availableCodes.length < item.quantity) {
@@ -278,11 +416,10 @@ const deliverDigitalProducts = async (order) => {
 
         // Asignar códigos al usuario
         for (const gameCode of availableCodes) {
-          gameCode.status = 'sold';
-          gameCode.used = true;
-          gameCode.usedBy = order.user;
+          gameCode.status = 'used';
+          gameCode.assignedTo = order.user;
+          gameCode.order = order._id;
           gameCode.usedAt = new Date();
-          gameCode.orderId = order._id;
           await gameCode.save();
 
           deliveredProducts.push({
@@ -290,6 +427,11 @@ const deliverDigitalProducts = async (order) => {
             gameCodeId: gameCode._id,
             delivered: true,
             deliveredAt: new Date()
+          });
+
+          codesForEmail.push({
+            productName: product.name || item.name,
+            code: gameCode.code
           });
         }
       }
@@ -303,6 +445,22 @@ const deliverDigitalProducts = async (order) => {
       await order.complete();
     } else {
       await order.save();
+    }
+
+    // Enviar el correo con los códigos, si hubo alguno entregado
+    if (codesForEmail.length > 0 && order.customer?.email) {
+      try {
+        await sendOrderCodesEmail({
+          to: order.customer.email,
+          nombre: order.customer.fullName || 'Cliente',
+          orderId: order._id,
+          items: codesForEmail,
+        });
+        console.log(`📧 Correo con códigos enviado a ${order.customer.email}`);
+      } catch (emailError) {
+        // No hacemos fallar la entrega si el correo falla, solo lo registramos
+        console.error('⚠️ No se pudo enviar el correo con los códigos:', emailError.message);
+      }
     }
 
     return deliveredProducts;
@@ -399,4 +557,5 @@ module.exports = {
   handleWebhook,
   getPaymentStatus,
   getUserPayments,
+  verifyAndProcessPayment,
 };

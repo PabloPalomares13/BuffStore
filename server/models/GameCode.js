@@ -5,6 +5,8 @@ const gameCodeSchema = new mongoose.Schema({
   code: { type: String, required: true, unique: true },
   status: { type: String, enum: ['valid', 'used', 'expired'], default: 'valid' },
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order', default: null },
+  usedAt: { type: Date, default: null },
   createdAt: { type: Date, default: Date.now },
   expiresAt: { type: Date } 
 });

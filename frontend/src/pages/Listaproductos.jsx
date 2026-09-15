@@ -326,7 +326,7 @@ const Listaproductos = () => {
   };
 
   return (
-    <div className="relative bg-transparent backdrop-blur-md rounded-[20px] shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] shadow-[#000000]/70 p-6 overflow-hidden"
+    <div className="relative bg-[#232323]/40 backdrop-blur-md rounded-[20px] shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] shadow-[#000000]/70 p-6 overflow-hidden"
       style={{ fontFamily: '"Urbanist", sans-serif' }}>
       {/* Manchas de luz neón difuminadas */}
       <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#FF137A] opacity-40 blur-[120px]" />

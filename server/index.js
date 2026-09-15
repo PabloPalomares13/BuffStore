@@ -1,5 +1,12 @@
 require('dotenv').config();
 
+const babelRegister = require("@babel/register");
+(babelRegister.default || babelRegister)({
+  presets: [["@babel/preset-react", { runtime: "automatic" }]],
+  extensions: [".js", ".jsx"],
+  ignore: [/node_modules/],
+});
+
 const { configureMercadoPago } = require('./config/mercadopagoConfig');
 const express = require('express');
 const mongoose = require('mongoose');
@@ -11,6 +18,8 @@ const gameCodeRoutes = require("./routes/gameCodesRoutes");
 const videoRoutes = require('./routes/videoRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const favoritesRoutes = require('./routes/favoritesRoutes');
+const rawgRoutes = require('./routes/rawgRoutes');
+const contactRoutes = require("./routes/contactRoutes");
 const path = require('path');
 const cors = require('cors');
 
@@ -33,6 +42,24 @@ if (missingEnvVars.length > 0) {
   process.exit(1);
 }
 
+// const app = express();
+// const allowedOrigins = [
+//   'http://localhost:5173', // Vite frontend local
+//   'http://localhost:3000', // Backend local 
+//   'https://frontend-buffstore.onrender.com' // Producción
+// ];
+
+// app.use(cors({
+//   origin: function (origin, callback) {
+//     if (!origin) return callback(null, true);
+//     if (allowedOrigins.includes(origin)) {
+//       return callback(null, true);
+//     } else {
+//       return callback(new Error('CORS not allowed for this origin'));
+//     }
+//   },
+//   credentials: true
+// }));
 const app = express();
 const allowedOrigins = [
   'http://localhost:5173', // Vite frontend local
@@ -43,7 +70,12 @@ const allowedOrigins = [
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
+
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
+      /\.ngrok-free\.(dev|app)$/.test(new URL(origin).hostname);
+
+    if (isAllowed) {
       return callback(null, true);
     } else {
       return callback(new Error('CORS not allowed for this origin'));
@@ -71,6 +103,8 @@ app.use("/api/codes", gameCodeRoutes);
 app.use('/api/videos', videoRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/favoritos', favoritesRoutes);
+app.use('/api/rawg', rawgRoutes);
+app.use("/api", contactRoutes);
 
 app.get('/', (req, res) => {
   res.json({ 

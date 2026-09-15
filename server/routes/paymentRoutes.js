@@ -5,7 +5,8 @@ const {
   createPaymentPreference, 
   handleWebhook, 
   getPaymentStatus,
-  getUserPayments 
+  getUserPayments,
+  verifyAndProcessPayment
 } = require('../Controllers/paymentController');
 const {protect} = require('../middleware/authMiddleware');
 
@@ -23,6 +24,15 @@ router.post('/create-preference',protect, createPaymentPreference); // protect,
  * @note    NO usar authMiddleware aquí, MP envía las notificaciones sin JWT
  */
 router.post('/webhook', handleWebhook);
+
+/**
+ * @route   POST /api/payments/verify/:paymentId
+ * @desc    Fallback: verifica y procesa un pago manualmente (para cuando
+ *          el webhook de sandbox no llega, ej: merchant_order bloqueado).
+ *          Lo llama el frontend desde /checkout/success.
+ * @access  Private
+ */
+router.post('/verify/:paymentId', protect, verifyAndProcessPayment);
 
 /**
  * @route   GET /api/payments/:paymentId

@@ -1,47 +1,29 @@
 // frontend/src/components/MercadoPagoCheckout.jsx
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
-const link = import.meta.env.PROD 
+const link = import.meta.env.PROD
   ? import.meta.env.VITE_BACKEND_URL
   : 'http://localhost:3000/api'
+
 const MercadoPagoCheckout = ({ orderId, onSuccess, onError }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [preferenceId, setPreferenceId] = useState(null);
 
-  // Cargar el SDK de Mercado Pago
-  useEffect(() => {
-    const loadMercadoPagoSDK = () => {
-      // Verificar si ya está cargado
-      if (window.MercadoPago) {
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = 'https://sdk.mercadopago.com/js/v2';
-      script.async = true;
-      script.onload = () => {
-        console.log('✅ Mercado Pago SDK cargado');
-      };
-      script.onerror = () => {
-        console.error('❌ Error al cargar Mercado Pago SDK');
-        setError('Error al cargar el sistema de pagos');
-      };
-      document.body.appendChild(script);
-    };
-
-    loadMercadoPagoSDK();
-  }, []);
-
-  // Crear preferencia de pago
+  // Crear preferencia de pago y redirigir a Mercado Pago
   const createPaymentPreference = async () => {
     setLoading(true);
     setError(null);
 
+    // IMPORTANTE: abrimos la pestaña ANTES del await, como resultado
+    // directo e inmediato del click del usuario. Si la abrimos después
+    // de esperar la respuesta del backend, algunos navegadores la
+    // bloquean como popup no solicitado (ya no cuenta como "gesto del
+    // usuario"). Empieza en blanco y le seteamos la URL real apenas
+    // la tengamos.
+    const paymentWindow = window.open('', '_blank');
+
     try {
-      const token = localStorage.getItem('userToken'); // Tu JWT
-      console.log('🔑 Token completo:', token);
-    console.log('📏 Token length:', token?.length);
+      const token = localStorage.getItem('userToken');
       const response = await axios.post(
         `${link}/payments/create-preference`,
         { orderId },
@@ -54,64 +36,32 @@ const MercadoPagoCheckout = ({ orderId, onSuccess, onError }) => {
       );
 
       if (response.data.success) {
-        const { preferenceId, sandboxInitPoint } = response.data.data;
-        setPreferenceId(preferenceId);
-        
-        // Inicializar Mercado Pago
-        initMercadoPago(preferenceId, sandboxInitPoint);
+        const { sandboxInitPoint, initPoint } = response.data.data;
+        const checkoutUrl = sandboxInitPoint || initPoint;
+
+        if (!checkoutUrl) {
+          throw new Error('Mercado Pago no devolvió una URL de checkout válida');
+        }
+
+        if (paymentWindow) {
+          paymentWindow.location.href = checkoutUrl;
+        } else {
+          // El navegador bloqueó incluso la ventana en blanco (poco común);
+          // como último recurso, navegamos en la misma pestaña.
+          window.location.href = checkoutUrl;
+        }
+      } else {
+        throw new Error(response.data.message || 'No se pudo crear la preferencia de pago');
       }
 
     } catch (err) {
       console.error('Error al crear preferencia:', err);
       console.error('Respuesta del servidor:', err.response?.data);
-      setError(err.response?.data?.message || 'Error al procesar el pago');
+      if (paymentWindow) paymentWindow.close();
+      setError(err.response?.data?.message || err.message || 'Error al procesar el pago');
       if (onError) onError(err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Inicializar el checkout de Mercado Pago
-  const initMercadoPago = (prefId, sandboxUrl) => {
-    const mp = new window.MercadoPago(
-      import.meta.env.VITE_MP_PUBLIC_KEY, 
-      {locale: 'es-CO'});
-
-    /* Opción 1: Checkout Pro (modal)
-    mp.checkout({
-      preference: {
-        id: prefId
-      },
-      autoOpen: true, // Abre automáticamente
-    });
-
-    // Opción 2: Redirigir a Mercado Pago (más simple para sandbox)
-  */ window.open(sandboxUrl, '_blank'); 
-  };
-
-  // Verificar estado del pago (llamar después de que el usuario vuelva)
-  const checkPaymentStatus = async (paymentId) => {
-    try {
-      const token = localStorage.getItem('userToken');
-      
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/payments/${paymentId}`,
-        {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }
-      );
-
-      if (response.data.success) {
-        const payment = response.data.data;
-        
-        if (payment.status === 'approved') {
-          if (onSuccess) onSuccess(payment);
-        }
-        
-        return payment;
-      }
-    } catch (err) {
-      console.error('Error al verificar pago:', err);
     }
   };
 
