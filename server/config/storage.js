@@ -2,7 +2,6 @@
 const { Storage } = require('@google-cloud/storage');
 const axios = require('axios');
  
-// Validar variables de entorno
 if (!process.env.GCS_PRIVATE_KEY) {
   throw new Error('GCS_PRIVATE_KEY environment variable is not set');
 }
@@ -62,11 +61,20 @@ const deleteFileFromGCS = async (fileName) => {
   }
 };
  
-// Función para generar nombre único de archivo
+// Función para generar nombre único de archivo (galería normal)
 const generateFileName = (originalName, productId, index) => {
   const extension = originalName.split('.').pop();
   const timestamp = Date.now();
   return `products/${productId}/${timestamp}_${index}.${extension}`;
+};
+ 
+// Función para generar el nombre de la foto de portada, dentro de una
+// subcarpeta "poster" propia de cada producto:
+// products/{productId}/poster/{timestamp}.{ext}
+const generatePosterFileName = (originalName, productId) => {
+  const extension = originalName.split('.').pop();
+  const timestamp = Date.now();
+  return `products/${productId}/poster/${timestamp}.${extension}`;
 };
  
 /**
@@ -146,5 +154,6 @@ module.exports = {
   uploadFileToGCS,
   deleteFileFromGCS,
   generateFileName,
+  generatePosterFileName,
   processAndUploadVideo
 };

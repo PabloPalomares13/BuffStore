@@ -46,14 +46,14 @@ const DashboardLayout = ({ children }) => {
   };
 
   return (
-     <div className="flex h-screen bg-[#000000]">
+     <div className="flex h-screen bg-[#232323]">
       {/* Sidebar Componente */}
       <Sidebar isOpen={isSidebarOpen} />
  
       {/* area contenido principal */}
       {/* -ml-5 mete el Header debajo de la esquina redondeada del Sidebar (rounded-[20px] = 20px), 
           y como el Sidebar tiene z-30 y este contenedor z-10, el Sidebar lo tapa: no queda hueco */}
-      <div className="flex-1 flex flex-col overflow-hidden mx-2 mt-2 relative z-10">
+      <div className="flex-1 flex flex-col overflow-hidden relative z-10">
         {/* Header Componente */}
         <Superheader
           isScrolled={isScrolled}
@@ -62,7 +62,7 @@ const DashboardLayout = ({ children }) => {
           toggleSidebar={toggleSidebar}
         />
  
-        <MainContent>
+        <MainContent >
           <Outlet />
         </MainContent>
       </div>

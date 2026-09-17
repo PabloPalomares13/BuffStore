@@ -11,7 +11,6 @@ const productSchema = new mongoose.Schema({
   tags:  { type: [String], default: [] },
   brand: String,
   vendor: String,
-  images: [String],// Array de URLs de Google Cloud Storage
   media: [{
     type: { type: String, enum: ['image', 'video'], required: true },
     url: { type: String, required: true },
@@ -19,7 +18,10 @@ const productSchema = new mongoose.Schema({
     order: { type: Number, default: 0 },
     fileName: String,
     uploadedAt: { type: Date, default: Date.now },
-    processing: { type: Boolean, default: false }
+    processing: { type: Boolean, default: false },
+    // true únicamente para la foto de portada (products/{id}/poster/...),
+    // el resto de imágenes/videos de la galería la dejan en false/default.
+    isPoster: { type: Boolean, default: false }
   }],
   platforms: {
     type: [String],
@@ -42,9 +44,9 @@ const productSchema = new mongoose.Schema({
   metacritic: { type: Number, default: null },
   esrbRating: { type: String, default: '' },
   website: { type: String, default: '' },
-  // Texto libre de plataformas (ej: "PlayStation 5", "Nintendo Switch"),
-  // separado del enum "platforms" de arriba para no romper filtros existentes.
+  genres: { type: [String], default: [] },
   platformsFull: { type: [String], default: [] },
+  rawgTags: { type: [String], default: [] },
 }, {
   timestamps: true
 });

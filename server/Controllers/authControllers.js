@@ -1,6 +1,6 @@
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
-
+const storage = require('../config/storage');
 // Generar JWT con rol incluido
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, {
@@ -86,11 +86,11 @@ const getUserProfile = async (req, res) => {
     const user = await User.findById(req.user.id);
 
     if (user) {
-      res.json({
-        _id: user._id,
-        email: user.email,
-        role: user.role
-      });
+      // user.toJSON() (definido en el modelo) ya quita el password.
+      // Devolvemos el documento completo para incluir fullName, nickname,
+      // phone, birthDate, billingAddress y avatarUrl sin tener que listar
+      // cada campo a mano.
+      res.json(user);
     } else {
       res.status(404).json({ message: 'Usuario no encontrado' });
     }
@@ -100,8 +100,95 @@ const getUserProfile = async (req, res) => {
   }
 };
 
+// @desc    Actualizar datos del perfil del usuario autenticado
+// @route   PUT /api/auth/profile
+// @access  Private
+const updateUserProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+
+    const {
+      fullName,
+      nickname,
+      phone,
+      birthDate,
+      billingAddress,
+      avatarUrl,
+      email,
+    } = req.body;
+
+    // El email cambia el identificador de login, así que se valida aparte
+    if (email !== undefined && email !== user.email) {
+      const emailTaken = await User.findOne({ email, _id: { $ne: user._id } });
+      if (emailTaken) {
+        return res.status(400).json({ message: 'Ese email ya está en uso' });
+      }
+      user.email = email;
+    }
+
+    // El nickname es único (índice sparse), así que también se valida
+    if (nickname !== undefined && nickname !== user.nickname) {
+      if (nickname) {
+        const nicknameTaken = await User.findOne({
+          nickname,
+          _id: { $ne: user._id },
+        });
+        if (nicknameTaken) {
+          return res.status(400).json({ message: 'Ese nickname ya está en uso' });
+        }
+      }
+      user.nickname = nickname;
+    }
+
+    if (fullName !== undefined) user.fullName = fullName;
+    if (phone !== undefined) user.phone = phone;
+    if (birthDate !== undefined) user.birthDate = birthDate || null;
+    if (billingAddress !== undefined) user.billingAddress = billingAddress;
+    if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
+
+    await user.save();
+
+    res.json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error del servidor', error: error.message });
+  }
+};
+
+const uploadAvatar = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: 'No se recibió ninguna imagen' });
+    }
+ 
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: 'Usuario no encontrado' });
+    }
+ 
+    // Carpeta separada de products/ dentro del mismo bucket
+    const destination = `avatars/${user._id}/${Date.now()}_${req.file.originalname}`;
+ 
+    const avatarUrl = await storage.uploadFileToGCS(req.file, destination);
+ 
+    user.avatarUrl = avatarUrl;
+    await user.save();
+ 
+    res.json({ avatarUrl });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error al subir la foto de perfil', error: error.message });
+  }
+};
+ 
 module.exports = {
   registerUser,
   loginUser,
-  getUserProfile
+  getUserProfile,
+  updateUserProfile,
+  uploadAvatar
 };

@@ -142,12 +142,22 @@ function formatCOP(value) {
   return `${value.toLocaleString("es-CO")} COP`;
 }
  
+//function getImage(product) {
+  //return product?.images?.[0] ?? product?.media?.[0]?.url;
+//}
+
 function getImage(product) {
-  return product?.images?.[0] ?? product?.media?.[0]?.url;
+  // cualquier imagen que NO sea la portada (opción secundaria)
+  const item = product?.media?.find((m) => m.type === "image" && !m.isPoster);
+  return item?.url;
 }
 function getVideo(product) {
-  // Solo videos que ya terminaron de procesarse en Cloud Run
-  return product?.media?.find((m) => m.type === "video" );
+  return product?.media?.find((m) => m.type === "video");
+}
+function getPoster(product) {
+  // la portada real (opción principal)
+  const item = product?.media?.find((m) => m.isPoster === true);
+  return item?.url;
 }
 // ---------------------------------------------------------------------------
 // Producto grande (columna izquierda, ~65% del ancho, 100% del alto)
@@ -155,6 +165,7 @@ function getVideo(product) {
 function BigCard({ product, icons, cycleKey, rotateIntervalMs }) {
   const image = getImage(product);
   const videoItem = getVideo(product);
+  const poster = getPoster(product);
   const navigate = useNavigate();
   const [videoReady, setVideoReady] = useState(false);
   const [videoError, setVideoError] = useState(null);
@@ -215,7 +226,7 @@ function BigCard({ product, icons, cycleKey, rotateIntervalMs }) {
             <div
               className="absolute inset-0"
               style={{
-                backgroundImage: `url(${image})`,
+                backgroundImage: `url(${poster || image})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
@@ -229,7 +240,7 @@ function BigCard({ product, icons, cycleKey, rotateIntervalMs }) {
               key={videoItem.url}
               className="absolute inset-0 h-full w-full object-cover"
               src={videoItem.url}
-              poster={videoItem.thumbnail || image}
+              poster={videoItem.thumbnail || image }
               autoPlay
               muted
               loop
@@ -302,7 +313,7 @@ function BigCard({ product, icons, cycleKey, rotateIntervalMs }) {
           className="absolute bottom-0 left-0 w-full"
         >
           <GlassPanelBig
-            imageSrc={image}
+            imageSrc={poster || image}
             className="flex items-center justify-between gap-4 p-4 md:p-8"
             style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0 }}
           >
@@ -313,7 +324,7 @@ function BigCard({ product, icons, cycleKey, rotateIntervalMs }) {
               >
                 {product.name}
               </h3>
-              <p className="line-clamp-2 max-w-md text-xs text-white/70 md:text-sm">
+              <p className="line-clamp-3 max-w-1xl text-xs text-white/80 md:text-sm">
                 {product.description}
               </p>
             </div>
@@ -333,7 +344,8 @@ function BigCard({ product, icons, cycleKey, rotateIntervalMs }) {
 
 function ActivatableCard({ product, isActive, weight, onSelect }) {
   const image = getImage(product);
-
+  const poster = getPoster(product);
+  const displayImage = poster || image;
   return (
     <div
       onClick={!isActive ? onSelect : undefined}
@@ -356,7 +368,7 @@ function ActivatableCard({ product, isActive, weight, onSelect }) {
             <div
               className="absolute inset-0"
               style={{
-                backgroundImage: `url(${image})`,
+                backgroundImage: `url(${displayImage})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
               }}
@@ -368,7 +380,7 @@ function ActivatableCard({ product, isActive, weight, onSelect }) {
               className="absolute bottom-0 left-0 w-full p-3"
             >
               <GlassPanel
-                imageSrc={image}
+                imageSrc={displayImage}
                 className="flex items-center justify-between gap-4 rounded-2xl p-4"
               >
                 <div className="min-w-0">
@@ -395,12 +407,12 @@ function ActivatableCard({ product, isActive, weight, onSelect }) {
             className="absolute inset-0"
           >
             <GlassPanel
-              imageSrc={image}
+              imageSrc={displayImage}
               className="flex h-full w-full items-center justify-between gap-3 rounded-2xl"
             >
               <div
                 className="h-full w-1/2 shrink-0 bg-cover bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${image})` }}
+                style={{ backgroundImage: `url(${displayImage})` }}
               />
               <motion.h4
                 initial={{ opacity: 0 }}

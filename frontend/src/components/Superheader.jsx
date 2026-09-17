@@ -43,9 +43,10 @@ const Superheader = ({ isScrolled, isMobileView, isSidebarOpen, toggleSidebar })
       }`}
     >
       {/* Manchas de luz neón difuminadas (contenedor propio recortado, no corta el resto del header) */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-16 left-1/4 w-56 h-56 rounded-full bg-[#FF137A] opacity-40 blur-[120px]" />
-        <div className="absolute -top-16 right-1/4 w-56 h-56 rounded-full bg-[#00FF37] opacity-40 blur-[120px]" />
+      <div className="pointer-events-none absolute inset-0 overflow-hidden bg-[#000000] ">
+        <div className="absolute -top-25 left-[-8%] w-85 h-85 rounded-full bg-[#FF137A] opacity-40 blur-[120px] " />
+         <div className="absolute -top-16 inset-x-0 mx-auto w-72 h-72 rounded-full bg-[#00FF37] opacity-40 blur-[120px]" />
+        <div className="absolute -top-16 right-[-10%] w-72 h-72 rounded-full bg-[#FF137A] opacity-40 blur-[120px] " />
       </div>
  
       <div className="relative flex items-center justify-between h-22 px-6">
@@ -104,12 +105,12 @@ const Superheader = ({ isScrolled, isMobileView, isSidebarOpen, toggleSidebar })
                       Mi carrito
                     </a>
                     <a
-                      href="/dashboard"
-                      onClick={(e) => navigateTo('/dashboard', e)}
+                      href="/userprofile"
+                      onClick={(e) => navigateTo('/userprofile', e)}
                       className="flex items-center px-4 py-2 text-sm font-Urbanist text-white/80 hover:bg-white/10 hover:text-[#00FF37] transition-colors"
                     >
                       <span className="mr-2"><Settings size={16} /></span>
-                      Dashboard
+                      Mi perfil
                     </a>
                     <a
                       href="/home"

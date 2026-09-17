@@ -292,6 +292,9 @@ const NewProduct = () => {
     videoFiles.forEach(file => {
       formData.append('videos', file);
     });
+    if (coverFile) {
+      formData.append('poster', coverFile);
+    }
 
     formData.append('videoProcessFlags', JSON.stringify(videoProcessFlags));
 
@@ -346,7 +349,7 @@ const NewProduct = () => {
   };
   
   return (
-    <main className="flex-1 bg-transparent ">
+    <main className="flex-1 ">
           {alert.show && (
             <div
               className={`fixed top-6 right-6 z-50 flex items-center rounded-full backdrop-blur-md border px-8 py-6 transition-all duration-300 transform mt-18 ${
@@ -384,7 +387,7 @@ const NewProduct = () => {
           )}
 
           <div
-            className="relative bg-transparent backdrop-blur-md rounded-[20px] shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] shadow-[#000000]/70 p-6 overflow-hidden"
+            className="relative bg-transparent backdrop-blur-md rounded-[20px] shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] shadow-[#000000]/70 p-6 overflow-hidden "
             style={{ fontFamily: '"Urbanist", sans-serif' }}
           >
             <div className="mb-6">
@@ -399,8 +402,7 @@ const NewProduct = () => {
             <div className="relative grid grid-cols-1 lg:grid-cols-3 gap-6">
 
               <div className="lg:col-span-2 space-y-6">
-                {/* Basic Information Card */}
-                <div className="bg-black/40 backdrop-blur-md rounded-[20px] border border-white/20 p-6">
+                <div className="bg-black/40 backdrop-blur-md rounded-[20px] border border-white/20 p-6 relative z-30">
                   <RawgSearchBar
                     token={localStorage.getItem('userToken')}
                     onAutofill={(data) => {
@@ -424,7 +426,11 @@ const NewProduct = () => {
                       addRawgScreenshotsAsImages(data.images?.screenshots || []);
                     }}
                   />
-                  <h2 className="text-lg font-semibold mb-2 mt-6 text-white">Información Básica</h2>
+                </div>
+                {/* Basic Information Card */}
+                <div className="bg-black/40 backdrop-blur-md rounded-[20px] border border-white/20 p-6">
+                  
+                  <h2 className="text-lg font-semibold mb-2 text-white">Información Básica</h2>
                   <p className="text-sm text-white/60 mb-6">Sección para configurar información básica del producto</p>
 
                   <div className="space-y-4">

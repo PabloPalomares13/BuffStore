@@ -16,9 +16,9 @@ const Sidebar = ({ isOpen }) => {
       }`}
       style={{ fontFamily: '"Urbanist", sans-serif' }}
     >
-      <div className="relative flex flex-col h-full w-68 bg-transparent rounded-[20px] rounded shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] shadow-[#000000]/40  overflow-hidden ml-2 my-2">
+      <div className="relative flex flex-col h-full w-68 bg-[#000000] overflow-hidden ">
         {/* Manchas de luz neón difuminadas */}
-        <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#FF137A] opacity-40 blur-[120px]" />
+        <div className="pointer-events-none absolute -top-24 -right-36 w-85 h-82 rounded-full bg-[#FF137A] opacity-40 blur-[120px]" />
         <div className="pointer-events-none absolute -bottom-24 -left-24 w-72 h-72 rounded-full bg-[#00FF37] opacity-40 blur-[120px]" />
  
         {/* Marca de agua ambiental (logo/decoración) */}
