@@ -93,7 +93,6 @@ try {
   console.error('⚠️ Error al configurar Mercado Pago:', error.message);
   console.log('⚠️ La aplicación continuará, pero los pagos no funcionarán');
 }
-
 // Routes
 app.use('/api/products', productRoutes);
 app.use('/api/auth', authRoutes);
@@ -105,14 +104,12 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/favoritos', favoritesRoutes);
 app.use('/api/rawg', rawgRoutes);
 app.use("/api", contactRoutes);
-
 app.get('/', (req, res) => {
   res.json({ 
     message: 'API funcionando',
     mercadoPagoEnabled: !!process.env.MP_ACCESS_TOKEN 
   });
 });
-
 // Conectar a MongoDB
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('MongoDB Atlas connected'))

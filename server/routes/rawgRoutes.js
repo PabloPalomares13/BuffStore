@@ -7,5 +7,6 @@ const { protect, isAdmin } = require('../middleware/authMiddleware');
 // y evita que cualquier visitante dispare llamadas a una API externa.
 router.get('/search', protect, isAdmin, rawgController.searchGames);
 router.get('/details/:rawgId', protect, isAdmin, rawgController.getGameDetails);
+router.delete('/cache/:rawgId', protect, isAdmin, rawgController.clearGameCache);
  
 module.exports = router;

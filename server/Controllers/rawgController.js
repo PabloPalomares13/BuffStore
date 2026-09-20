@@ -11,11 +11,9 @@ exports.searchGames = async (req, res) => {
     if (!name || name.trim() === '') {
       return res.status(400).json({ error: 'Falta el parámetro "name"' });
     }
-
     const existingProduct = await Product.findOne({ name: { $regex: name, $options: 'i' } })
       .select('name code')
       .lean();
-
     const cached = await RawgCache.find({ name: { $regex: name, $options: 'i' } })
       .limit(10)
       .lean();
@@ -65,7 +63,11 @@ exports.getGameDetails = async (req, res) => {
     if (!rawgId) return res.status(400).json({ error: 'Falta rawgId' });
 
     const existingCache = await RawgCache.findOne({ rawgId: Number(rawgId) }).lean();
-    if (existingCache) {
+
+    // Solo usamos la caché si Gemini SÍ normalizó. Si la entrada quedó del fallback
+    // crudo (normalizedByGemini: false), se trata como "no hay caché" y se reintenta
+    // la normalización, para que un 503 pasajero no deje datos sin traducir pegados.
+    if (existingCache && existingCache.normalizedByGemini) {
       return res.json({ product: existingCache });
     }
 
@@ -122,7 +124,7 @@ exports.getGameDetails = async (req, res) => {
       }
     };
 
-    // 2. Gemini normaliza y traduce. Si falla dos veces, caemos a un fallback
+    // 2. Gemini normaliza y traduce. Si falla, caemos a un fallback
     //    con los datos crudos de RAWG (sin traducir) en vez de romper el flujo
     //    o guardar basura en Mongo.
     let normalized;
@@ -158,12 +160,44 @@ exports.getGameDetails = async (req, res) => {
       rawgRaw: rawgGame
     };
 
-    const created = await RawgCache.create(finalDoc);
+    // upsert: si ya existía una entrada del fallback crudo, la reemplaza en vez de
+    // chocar con el índice único de rawgId (create() lanzaría un error E11000).
+    const saved = await RawgCache.findOneAndUpdate(
+      { rawgId: rawgGame.id },
+      finalDoc,
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    ).lean();
 
-    return res.json({ product: created.toObject(), normalizedByGemini });
+    return res.json({ product: saved, normalizedByGemini });
   } catch (error) {
     console.error('Error en getGameDetails:', error);
-    return res.status(500).json({ error: 'Error al obtener el detalle del juego', details: error.message });
+    return res.status(500).json({ error: 'Error al obtener el detalle del juego' });
+  }
+};
+
+// DELETE /api/rawg/cache/:rawgId
+// Borra de la caché SOLO el juego indicado (no toca los demás). Después de esto,
+// la próxima vez que se pida ese juego volverá a pasar por RAWG + Gemini.
+exports.clearGameCache = async (req, res) => {
+  try {
+    const rawgId = Number(req.params.rawgId);
+
+    if (!Number.isInteger(rawgId)) {
+      return res.status(400).json({ error: 'rawgId inválido' });
+    }
+
+    const result = await RawgCache.deleteOne({ rawgId });
+
+    return res.json({
+      rawgId,
+      deleted: result.deletedCount > 0,
+      message: result.deletedCount > 0
+        ? 'Caché del juego eliminada'
+        : 'Ese juego no estaba en la caché'
+    });
+  } catch (error) {
+    console.error('Error en clearGameCache:', error);
+    return res.status(500).json({ error: 'Error al limpiar la caché del juego' });
   }
 };
 

@@ -83,7 +83,7 @@ const Register = () => {
       console.log('Registration successful:', response.data);
       setAlert({ show: true, type: 'success', message: 'Cuenta creada correctamente' });
       setTimeout(() => setAlert((prev) => ({ ...prev, show: false })), 4000);
-      navigate('/login')
+      navigate('/userprofile')
     } catch (error) {
       console.error('Registration failed:', error.response?.data || error.message);
       setAlert({ show: true, type: 'error', message: 'No pudimos crear tu cuenta ',detail: error.response?.data?.message || error.response?.data || error.message, });

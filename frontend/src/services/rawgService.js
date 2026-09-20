@@ -20,6 +20,12 @@ const rawgService = {
       headers: { Authorization: `Bearer ${token}` }
     });
     return response.data; // { product: {...} }
+  },
+  clearGameCache: async (rawgId, token) => {
+    const response = await axios.delete(`${API_URL}/rawg/cache/${rawgId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data; // { rawgId, deleted, message }
   }
 };
  

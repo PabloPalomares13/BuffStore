@@ -32,9 +32,7 @@ async function sendVerificationCode({
  
   return data;
 }
- 
-module.exports = { sendVerificationCode, sendOrderCodesEmail };
- 
+
 /**
  * Envía al cliente el/los código(s) de juego de un pedido ya pagado.
  *
@@ -58,3 +56,6 @@ async function sendOrderCodesEmail({ to, nombre, orderId, items }) {
  
   return data;
 }
+
+module.exports = { sendVerificationCode, sendOrderCodesEmail };
+ 

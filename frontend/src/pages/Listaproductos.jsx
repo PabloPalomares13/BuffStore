@@ -223,16 +223,10 @@ const Listaproductos = () => {
       
       // Ahora las imágenes son URLs directas de Google Cloud Storage
       const productsWithImages = data.map(product => {
-        if (product.images && product.images.length > 0) {
-          return { 
-            ...product, 
-            displayImageUrl: product.images[0] // Usar directamente la URL de GCS
-          };
-        }
-        return {
-          ...product,
-          displayImageUrl: '/path/to/placeholder.jpg' // Tu placeholder
-        };
+            const posterUrl = product.media?.find(m => m.isPoster)?.url;
+            const galleryImageUrl = product.media?.find(m => m.type === 'image' && !m.isPoster)?.url;
+            const displayImageUrl = posterUrl || galleryImageUrl || product.images?.[0] || '/path/to/placeholder.jpg';
+            return { ...product, displayImageUrl };
       });
       
       setProducts(productsWithImages || []);

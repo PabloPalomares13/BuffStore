@@ -1,5 +1,5 @@
 const { Type } = require('@google/genai');
-const { ai, TEXT_MODEL } = require('./geminiConfig');
+const { ai, TEXT_MODELS, runWithFallback } = require('./geminiConfig');
 
 // Esquema que Gemini está OBLIGADO a seguir (structured output). Esto reduce
 // muchísimo el riesgo de JSON mal formado, pero igual lo revalidamos abajo
@@ -65,18 +65,23 @@ function validateGameSchema(data) {
   return { valid: errors.length === 0, errors };
 }
 
-// Intenta normalizar con Gemini. Reintenta una vez si el JSON no cumple el
-// esquema. Si sigue fallando, lanza el error para que el caller decida el
-// fallback (nunca guardamos datos corruptos en Mongo).
+// Intenta normalizar con Gemini.
+// - Los errores temporales (503, 429...) los maneja runWithFallback:
+//   reintenta con backoff y cambia de modelo si hace falta.
+// - Si el JSON no cumple el esquema, se reintenta una vez más (attempt).
+// Si sigue fallando, lanza el error para que el caller decida el fallback
+// (nunca guardamos datos corruptos en Mongo).
 async function normalizeGameData(rawgGame, attempt = 1) {
-  const result = await ai.models.generateContent({
-    model: TEXT_MODEL,
-    contents: buildPrompt(rawgGame),
-    config: {
-      responseMimeType: 'application/json',
-      responseSchema: gameSchema
-    }
-  });
+  const { result } = await runWithFallback(TEXT_MODELS, (model) =>
+    ai.models.generateContent({
+      model,
+      contents: buildPrompt(rawgGame),
+      config: {
+        responseMimeType: 'application/json',
+        responseSchema: gameSchema
+      }
+    })
+  );
 
   let parsed;
   try {

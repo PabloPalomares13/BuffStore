@@ -9,6 +9,38 @@ import {
 const link = import.meta.env.PROD 
   ? import.meta.env.VITE_BACKEND_URL
   : 'http://localhost:3000'
+
+const INITIAL_PRODUCT_DATA = {
+  name: '', description: '', price: '', stock: '', taxRate: '',
+  category: '', tags: '', brand: '', vendor: '',
+  rawgId: '', releaseDate: '', rating: '', ratingsCount: '', metacritic: '',
+  esrbRating: '', website: '', genres: '', platformsFull: '', rawgTags: '',
+};
+const RAWG_FILE_PREFIX = 'rawg_screenshot_';
+
+const isEmptyValue = (v) =>
+  v === null ||
+  v === undefined ||
+  (typeof v === 'string' && v.trim() === '') ||
+  (Array.isArray(v) && v.length === 0);
+ 
+// Devuelve los nombres de los datos que RAWG no trajo para este juego
+const detectMissingRawgData = (data) => {
+  const checks = [
+    ['Sitio web', data.website],
+    ['Metacritic', data.metacritic],
+    ['Clasificación ESRB', data.esrbRating],
+    ['Géneros', data.genres],
+    ['Tags de contenido', data.tags],
+    ['Plataformas', data.platforms],
+    ['Desarrollador', data.developer],
+    ['Publisher', data.publisher],
+    ['Fecha de lanzamiento', data.releaseDate],
+    ['Descripción', data.description],
+    ['Screenshots', data.images?.screenshots],
+  ];
+  return checks.filter(([, value]) => isEmptyValue(value)).map(([label]) => label);
+};
 const NewProduct = () => {
   const navigate = useNavigate();
 
@@ -37,6 +69,7 @@ const NewProduct = () => {
     rawgTags: '',       // texto separado por comas, ej: "Mundo abierto, Un jugador"
   });
 
+  
   // Foto de portada (single). Por ahora solo vive en el frontend, no se
   // manda todavía al backend (falta wiring en productRoutes.js/multer).
   const [coverFile, setCoverFile] = useState(null);
@@ -49,6 +82,9 @@ const NewProduct = () => {
   const [videoProcessFlags, setVideoProcessFlags] = useState([]);
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fileInputKey, setFileInputKey] = useState(0);
+  const [missingRawgFields, setMissingRawgFields] = useState([]);
+  const [usedGeminiFallback, setUsedGeminiFallback] = useState(false);  
   
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -153,7 +189,7 @@ const NewProduct = () => {
 
     for (let i = 0; i < urlsAUsar.length; i++) {
       try {
-        const file = await urlToImageFile(urlsAUsar[i], `rawg_screenshot_${Date.now()}_${i}.jpg`);
+        const file = await urlToImageFile(urlsAUsar[i], `${RAWG_FILE_PREFIX}${Date.now()}_${i}.jpg`);
         setImageFiles(prev => [...prev, file]);
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -267,16 +303,18 @@ const NewProduct = () => {
       }
     });
 
-    // "tags" del schema guarda TODO junto: la etiqueta de marketing (Nuevo/
-    // Oferta/Destacado) + los géneros + los tags de contenido de RAWG.
-    // Así el buscador (searchProducts, que ya busca por tags) también
-    // encuentra el producto por género o característica.
-    const combinedTags = [
-      productData.tags,
-      ...productData.genres.split(',').map(t => t.trim()),
-      ...productData.rawgTags.split(',').map(t => t.trim()),
-    ].filter(Boolean);
+    const toList = (text) =>
+      (text || '').split(',').map((t) => t.trim()).filter(Boolean);
+    
+    const genresArray = toList(productData.genres);
+    const rawgTagsArray = toList(productData.rawgTags);
+    
+    const combinedTags = [productData.tags, ...genresArray, ...rawgTagsArray].filter(Boolean);
     formData.append('tags', JSON.stringify(combinedTags));
+    
+    // NUEVO: además se envían por separado, para que se guarden en sus propios campos
+    formData.append('genres', JSON.stringify(genresArray));
+    formData.append('rawgTags', JSON.stringify(rawgTagsArray));
 
     // platformsFull: texto libre separado por coma -> array
     const platformsFullArray = productData.platformsFull
@@ -347,6 +385,28 @@ const NewProduct = () => {
       setTimeout(() => setAlert({ show: false, type: '', message: '' }), 3000);
     }
   };
+  const handleResetForm = () => {
+  setProductData((prev) => ({
+    ...INITIAL_PRODUCT_DATA,
+  }));
+ 
+  // Quita solo las screenshots de RAWG (imageFiles e imagePreviews van en paralelo)
+  const keepIndexes = imageFiles
+    .map((file, i) => (file.name.startsWith(RAWG_FILE_PREFIX) ? -1 : i))
+    .filter((i) => i !== -1);
+ 
+  setImageFiles((prev) => prev.filter((_, i) => keepIndexes.includes(i)));
+  setImagePreviews((prev) => prev.filter((_, i) => keepIndexes.includes(i)));
+  setFileInputKey((k) => k + 1);
+  setMissingRawgFields([]);
+  setUsedGeminiFallback(false);
+};
+  
+    const handleCancel = () => {
+    // Redirect back to product list
+    navigate('/listaproductos');
+  };
+  
   
   return (
     <main className="flex-1 ">
@@ -405,27 +465,46 @@ const NewProduct = () => {
                 <div className="bg-black/40 backdrop-blur-md rounded-[20px] border border-white/20 p-6 relative z-30">
                   <RawgSearchBar
                     token={localStorage.getItem('userToken')}
+                    onCacheCleared={handleResetForm}
                     onAutofill={(data) => {
                       setProductData(prev => ({
                         ...prev,
-                        name: data.name || prev.name,
-                        description: data.description || prev.description,
-                        brand: data.developer || prev.brand,
-                        vendor: data.publisher || prev.vendor,
-                        rawgId: data.rawgId ?? prev.rawgId,
-                        releaseDate: data.releaseDate || prev.releaseDate,
-                        rating: data.rating ?? prev.rating,
-                        ratingsCount: data.ratingsCount ?? prev.ratingsCount,
-                        metacritic: data.metacritic ?? prev.metacritic,
-                        esrbRating: data.esrbRating || prev.esrbRating,
-                        website: data.website || prev.website,
+                        name: data.name ?? '',
+                        description: data.description ?? '',
+                        brand: data.developer ?? '',
+                        vendor: data.publisher ?? '',
+                        rawgId: data.rawgId ?? '',
+                        releaseDate: data.releaseDate ?? '',
+                        rating: data.rating ?? '',
+                      ratingsCount: data.ratingsCount ?? '',
+                      metacritic: data.metacritic ?? '',
+                        esrbRating: data.esrbRating ?? '',
+                        website: data.website ?? '',
                         genres: (data.genres || []).join(', '),
                         platformsFull: (data.platforms || []).join(', '),
                         rawgTags: (data.tags || []).join(', '),
                       }));
+                      setMissingRawgFields(detectMissingRawgData(data));
+                      setUsedGeminiFallback(data.normalizedByGemini === false);
                       addRawgScreenshotsAsImages(data.images?.screenshots || []);
-                    }}
+                  }}
                   />
+                  {(missingRawgFields.length > 0 || usedGeminiFallback) && (
+                    <div className="mt-3 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-200">
+                      {missingRawgFields.length > 0 && (
+                        <p>
+                          <span className="font-semibold">RAWG.io no tiene estos datos para este juego:</span>{' '}
+                          {missingRawgFields.join(', ')}. Si los necesitas, complétalos manualmente.
+                        </p>
+                      )}
+                      {usedGeminiFallback && (
+                        <p className={missingRawgFields.length > 0 ? 'mt-1' : ''}>
+                          No se pudo traducir con Gemini (servicio ocupado): los géneros, tags y la descripción
+                          están sin traducir. Pulsa &quot;Limpiar caché&quot; y vuelve a seleccionar el juego para reintentar.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 {/* Basic Information Card */}
                 <div className="bg-black/40 backdrop-blur-md rounded-[20px] border border-white/20 p-6">
@@ -737,6 +816,7 @@ const NewProduct = () => {
                       type="file"
                       multiple
                       accept="image/*"
+                      key={`img-${fileInputKey}`}
                       onChange={handleImageChange}
                       className="hidden"
                     />
@@ -865,6 +945,13 @@ const NewProduct = () => {
                   'Guardar Producto'
                 )}
               </button>
+              <button
+                    type="button"
+                    onClick={handleCancel}
+                    className="w-full bg-transparent hover:bg-white/10 text-white/70 py-2 px-4 rounded-full border border-white/20 transition-colors duration-300"
+                  >
+                    Cancelar
+            </button>
             </div>
             </div>
           </div>

@@ -46,46 +46,25 @@ const generateUniqueProductCode = async () => {
 
   return `XX${Date.now().toString().slice(-3)}`;
 };
-
+ const parseArrayField = (value) => {
+  if (value === undefined || value === null || value === '') return [];
+  if (Array.isArray(value)) return value;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed : [String(parsed)];
+  } catch (e) {
+    // no era JSON: lo tratamos como lista separada por comas
+    return String(value).split(',').map((v) => v.trim()).filter(Boolean);
+  }
+};
 // Crear producto
 router.post('/', protect, isAdmin, upload.fields([{ name: 'images', maxCount: 10 },{ name: 'videos', maxCount: 2 },{ name: 'poster', maxCount: 1 }]), async (req, res) => {
   try {
-    // "tags" y "platformsFull" llegan como JSON.stringify(...) desde el
-    // FormData del frontend (FormData solo puede mandar strings), hay que
-    // parsearlos antes de construir el Product.
-    let tags = [];
-    if (req.body.tags) {
-      try {
-        tags = JSON.parse(req.body.tags);
-      } catch (e) {
-        tags = [req.body.tags];
-      }
-    }
 
-    let platformsFull = [];
-    if (req.body.platformsFull) {
-      try {
-        platformsFull = JSON.parse(req.body.platformsFull);
-      } catch (e) {
-        platformsFull = [];
-      }
-    }
-    let genres = [];
-    if (req.body.genres) {
-      try {
-        tags = JSON.parse(req.body.genres);
-      } catch (e) {
-        tags = [req.body.genres];
-      }
-    }
-    let rawgTags = [];
-    if (req.body.rawgTags) {
-      try {
-        tags = JSON.parse(req.body.rawgTags);
-      } catch (e) {
-        tags = [req.body.rawgTags];
-      }
-    }
+    const tags = parseArrayField(req.body.tags);
+    const platformsFull = parseArrayField(req.body.platformsFull);
+    const genres = parseArrayField(req.body.genres);
+    const rawgTags = parseArrayField(req.body.rawgTags);
 
     // El código SIEMPRE se genera en el backend, nunca se confía en uno
     // que venga del cliente (req.body.code, si llegara, se ignora).
