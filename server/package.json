@@ -8,6 +8,10 @@
     "dev": "nodemon index.js"
   },
   "dependencies": {
+    "@babel/core": "^8.0.6",
+    "@babel/preset-env": "^8.0.6",
+    "@babel/preset-react": "^8.0.1",
+    "@babel/register": "^8.0.6",
     "@google-cloud/storage": "^7.17.1",
     "@google/genai": "^2.21.0",
     "@react-email/components": "^1.0.12",
@@ -24,10 +28,5 @@
     "multer": "^1.4.5-lts.2",
     "puppeteer-core": "^25.10.0",
     "resend": "^6.27.0"
-  },
-  "devDependencies": {
-    "@babel/core": "^8.0.5",
-    "@babel/preset-react": "^8.0.1",
-    "@babel/register": "^8.0.5"
   }
 }
