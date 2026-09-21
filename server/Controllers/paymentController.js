@@ -3,8 +3,9 @@ const { getNotificationUrls, getDefaultPreferenceConfig, CURRENCY_CONFIG } = req
 const Payment = require('../models/schemas/Payment');
 const Order = require('../models/Order');
 const GameCode = require('../models/GameCode');
-const User = require('../models/User');
+//const User = require('../models/User');
 const { sendOrderCodesEmail } = require('../services/emailService'); // desactivado temporalmente
+const Product = require('../models/Product');
 
 /**
  * Crear preferencia de pago (inicia el proceso de checkout)
@@ -59,17 +60,47 @@ const createPaymentPreference = async (req, res) => {
     }
 
     // 4. Obtener información del usuario
-    const user = await User.findById(userId);
+    // const user = await User.findById(userId);
 
     // 5. Preparar items para Mercado Pago (usando datos ya guardados en order.products)
-    const currency = CURRENCY_CONFIG.CO; // ajusta la key si manejas varios países
-    const items = order.products.map(item => ({
-      title: item.name || 'Producto',
-      quantity: item.quantity || 1,
-      unit_price: Number((item.price || 0).toFixed(2)),
-      currency_id: currency,
-    }));
+    const currency = CURRENCY_CONFIG.CO;
+    const dbProducts = await Product.find({
+      _id: { $in: order.products.map(i => i.productId) },
+    });
+    const byId = new Map(dbProducts.map(p => [p._id.toString(), p]));
 
+    let taxesRaw = 0;
+    const items = order.products.map(item => {
+      const p = byId.get(item.productId.toString());
+      if (!p) throw new Error(`Producto no encontrado: ${item.productId}`);
+
+      const unit = Math.round(p.price);
+      const rate = (p.taxRate ?? 8) / 100; // taxRate guardado en porcentaje
+      taxesRaw += unit * item.quantity * rate;
+
+      return {
+        id: p._id.toString(),
+        title: p.name,
+        quantity: item.quantity,
+        unit_price: unit,
+        currency_id: currency,
+      };
+    });
+
+    // El impuesto va como un item aparte para que el total cobrado incluya el IVA
+    const taxes = Math.round(taxesRaw);
+    if (taxes > 0) {
+      items.push({
+        id: 'iva',
+        title: 'Impuestos (IVA)',
+        quantity: 1,
+        unit_price: taxes,
+        currency_id: currency,
+      });
+    }
+
+    const chargeTotal = items.reduce((s, i) => s + i.unit_price * i.quantity, 0);
+    order.totals = { subtotal: chargeTotal - taxes, taxes, total: chargeTotal };
     // 6. Configurar preferencia de pago (defaults + overrides específicos de esta orden)
     const urls = getNotificationUrls();
     console.log('🔗 URLs configuradas:', urls);
@@ -81,6 +112,7 @@ const createPaymentPreference = async (req, res) => {
         failure: urls.failure,
         pending: urls.pending,
       },
+      payment_methods: { installments: 12 },
       notification_url: urls.notification,
       external_reference: orderId.toString(),
     };
@@ -123,10 +155,10 @@ const createPaymentPreference = async (req, res) => {
       orderId: order._id,
       userId: userId,
       preferenceId: preferenceId,
-      amount: order.totals.total,
+      amount: chargeTotal,  
       currency: 'COP',
       status: 'pending',
-      description: `Orden #${order._id.toString().slice(-8)} - ${items.length} producto(s)`,
+      description: `Orden #${order._id.toString().slice(-8)} - ${order.products.length} producto(s)`,
       metadata: {
         items: order.products.map(item => ({
           productId: item.productId ? item.productId.toString() : 'unknown',
@@ -389,65 +421,81 @@ const verifyAndProcessPayment = async (req, res) => {
  */
 const deliverDigitalProducts = async (order) => {
   try {
-    const deliveredProducts = [];
+    // Conservamos lo ya entregado para que reprocesar la orden no duplique códigos
+    const deliveredProducts = [...(order.digitalProducts || [])];
     const codesForEmail = [];
+    const issues = [];
 
     for (const item of order.products) {
       const product = item.productId;
 
       if (!product) {
         console.error('⚠️ Item sin productId poblado, se omite:', item);
+        issues.push(`Producto no encontrado: ${item.name}`);
         continue;
       }
 
-      // Solo procesar productos digitales
-      // (si el producto es de antes de agregar el campo 'type', se asume digital)
-      if (!product.type || product.type === 'digital') {
-        // Buscar códigos disponibles para este producto
-        const availableCodes = await GameCode.find({
-          product: product._id,
-          status: 'valid'
-        }).limit(item.quantity);
+      if (product.type && product.type !== 'digital') continue;
 
-        if (availableCodes.length < item.quantity) {
-          console.error(`⚠️ No hay suficientes códigos para ${product.name}`);
-          continue;
+      // Cuántos códigos de este producto ya se entregaron en esta orden
+      const alreadyDelivered = deliveredProducts.filter(
+        d => d.productId?.toString() === product._id.toString()
+      ).length;
+      const pending = item.quantity - alreadyDelivered;
+      if (pending <= 0) continue;
+
+      // Reclamar cada código de forma atómica: solo uno de dos procesos
+      // simultáneos puede pasar de 'valid' a 'used'
+      for (let i = 0; i < pending; i++) {
+        const gameCode = await GameCode.findOneAndUpdate(
+          { product: product._id, status: 'valid' },
+          {
+            $set: {
+              status: 'used',
+              assignedTo: order.user,
+              order: order._id,
+              usedAt: new Date(),
+            },
+          },
+          { new: true }
+        );
+
+        if (!gameCode) {
+          console.error(`⚠️ Faltan códigos para ${product.name} (orden ${order._id})`);
+          issues.push(`Faltan ${pending - i} código(s) de ${product.name}`);
+          break;
         }
 
-        // Asignar códigos al usuario
-        for (const gameCode of availableCodes) {
-          gameCode.status = 'used';
-          gameCode.assignedTo = order.user;
-          gameCode.order = order._id;
-          gameCode.usedAt = new Date();
-          await gameCode.save();
+        deliveredProducts.push({
+          productId: product._id,
+          gameCodeId: gameCode._id,
+          delivered: true,
+          deliveredAt: new Date(),
+        });
 
-          deliveredProducts.push({
-            productId: product._id,
-            gameCodeId: gameCode._id,
-            delivered: true,
-            deliveredAt: new Date()
-          });
-
-          codesForEmail.push({
-            productName: product.name || item.name,
-            code: gameCode.code
-          });
-        }
+        codesForEmail.push({
+          productName: product.name || item.name,
+          code: gameCode.code,
+        });
       }
+
+      // Sincronizar el stock del producto con los códigos realmente disponibles
+      const remaining = await GameCode.countDocuments({
+        product: product._id,
+        status: 'valid',
+      });
+      await Product.updateOne({ _id: product._id }, { $set: { stock: remaining } });
     }
 
-    // Actualizar orden con productos entregados
     order.digitalProducts = deliveredProducts;
+    if (issues.length) order.deliveryIssue = issues.join(' | ');
 
-    // Si todos los productos fueron entregados, completar la orden
     if (order.areAllProductsDelivered()) {
       await order.complete();
     } else {
       await order.save();
     }
 
-    // Enviar el correo con los códigos, si hubo alguno entregado
     if (codesForEmail.length > 0 && order.customer?.email) {
       try {
         await sendOrderCodesEmail({
@@ -458,13 +506,11 @@ const deliverDigitalProducts = async (order) => {
         });
         console.log(`📧 Correo con códigos enviado a ${order.customer.email}`);
       } catch (emailError) {
-        // No hacemos fallar la entrega si el correo falla, solo lo registramos
         console.error('⚠️ No se pudo enviar el correo con los códigos:', emailError.message);
       }
     }
 
     return deliveredProducts;
-
   } catch (error) {
     console.error('Error al entregar productos digitales:', error);
     throw error;

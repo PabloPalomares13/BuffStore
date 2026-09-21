@@ -94,6 +94,7 @@ const orderSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  deliveryIssue: String,
 
   // ============ FIN NUEVOS CAMPOS ============
 

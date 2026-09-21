@@ -10,60 +10,38 @@ const MercadoPagoCheckout = ({ orderId, onSuccess, onError }) => {
   const [error, setError] = useState(null);
 
   // Crear preferencia de pago y redirigir a Mercado Pago
-  const createPaymentPreference = async () => {
-    setLoading(true);
-    setError(null);
+const createPaymentPreference = async () => {
+  setLoading(true);
+  setError(null);
 
-    // IMPORTANTE: abrimos la pestaña ANTES del await, como resultado
-    // directo e inmediato del click del usuario. Si la abrimos después
-    // de esperar la respuesta del backend, algunos navegadores la
-    // bloquean como popup no solicitado (ya no cuenta como "gesto del
-    // usuario"). Empieza en blanco y le seteamos la URL real apenas
-    // la tengamos.
-    const paymentWindow = window.open('', '_blank');
+  try {
+    const token = localStorage.getItem('userToken');
+    const response = await axios.post(
+      `${link}/payments/create-preference`,
+      { orderId },
+      { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
+    );
 
-    try {
-      const token = localStorage.getItem('userToken');
-      const response = await axios.post(
-        `${link}/payments/create-preference`,
-        { orderId },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-
-      if (response.data.success) {
-        const { sandboxInitPoint, initPoint } = response.data.data;
-        const checkoutUrl = sandboxInitPoint || initPoint;
-
-        if (!checkoutUrl) {
-          throw new Error('Mercado Pago no devolvió una URL de checkout válida');
-        }
-
-        if (paymentWindow) {
-          paymentWindow.location.href = checkoutUrl;
-        } else {
-          // El navegador bloqueó incluso la ventana en blanco (poco común);
-          // como último recurso, navegamos en la misma pestaña.
-          window.location.href = checkoutUrl;
-        }
-      } else {
-        throw new Error(response.data.message || 'No se pudo crear la preferencia de pago');
-      }
-
-    } catch (err) {
-      console.error('Error al crear preferencia:', err);
-      console.error('Respuesta del servidor:', err.response?.data);
-      if (paymentWindow) paymentWindow.close();
-      setError(err.response?.data?.message || err.message || 'Error al procesar el pago');
-      if (onError) onError(err);
-    } finally {
-      setLoading(false);
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'No se pudo crear la preferencia de pago');
     }
-  };
+
+    const { initPoint } = response.data.data;
+    if (!initPoint) {
+      throw new Error('Mercado Pago no devolvió una URL de checkout válida');
+    }
+
+    // Misma pestaña: al terminar, Mercado Pago vuelve aquí mismo
+    window.location.href = initPoint;
+
+  } catch (err) {
+    console.error('Error al crear preferencia:', err);
+    setError(err.response?.data?.message || err.message || 'Error al procesar el pago');
+    if (onError) onError(err);
+    setLoading(false);
+  }
+  // Sin finally: si hay redirección, la página se descarga y no hay que quitar el loading
+};
 
   return (
     <div className="mercadopago-checkout">
