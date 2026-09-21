@@ -119,7 +119,7 @@ const PORT = process.env.PORT || 3000;
 
 app.get('/api/test', (req, res) => {
   res.json({ 
-    message: 'Backend funcionando',
+    message: 'Backend funcionando :)',
     callbackUrl: `${process.env.API_BASE_URL_TEMP}/api/videos/callback`
   });
 });

@@ -1,6 +1,6 @@
 const { resend } = require("../config/resendConfig");
 const VerificationCodeEmail = require("../emails/verificationCodeEmail.jsx")
-const OrderCodeEmail = require("../emails/OrderCodeEmail.jsx").default;
+const OrderCodeEmail = require("../emails/orderCodeEmail.jsx").default;
  
 /**
  * Envía un correo con código de verificación. Reutilizable desde
