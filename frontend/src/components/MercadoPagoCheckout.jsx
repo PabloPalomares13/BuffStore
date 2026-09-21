@@ -2,8 +2,8 @@
 import { useState } from 'react';
 import axios from 'axios';
 const link = import.meta.env.PROD
-  ? import.meta.env.VITE_BACKEND_URL
-  : 'http://localhost:3000/api'
+  ? `${import.meta.env.VITE_BACKEND_URL}/api`
+  : 'http://localhost:3000/api';
 
 const MercadoPagoCheckout = ({ orderId, onSuccess, onError }) => {
   const [loading, setLoading] = useState(false);
