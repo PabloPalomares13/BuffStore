@@ -14,7 +14,7 @@ import buff from "../assets/Buff1.png";
 import store from "../assets/Store.png";
 import { useNavigate } from 'react-router-dom';
 import buffarcade from "../assets/BuffArcade.png";
-import logosimple from "../assets/BLogo4k-white.png";
+import logosimple from "../assets/BLogo4K-white.png";
 const link = import.meta.env.PROD 
   ? import.meta.env.VITE_BACKEND_URL
   : 'http://localhost:3000'

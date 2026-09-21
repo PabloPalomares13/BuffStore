@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, Bell, User, Settings, Home, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import logo from '../assets/BLogo4k-white.png';
+import logo from '../assets/BLogo4K-white.png';
 
 const Superheader = ({ isScrolled, isMobileView, isSidebarOpen, toggleSidebar }) => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);

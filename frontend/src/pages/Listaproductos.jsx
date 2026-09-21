@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, ChevronRight, ChevronLeft, Edit, Trash2, Plus, Download } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { PDFDownloadLink, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
-import logobuff from '../assets/BLogo4k.png';
+import logobuff from '../assets/BLogo4K.png';
 
 const link = import.meta.env.PROD 
   ? import.meta.env.VITE_BACKEND_URL

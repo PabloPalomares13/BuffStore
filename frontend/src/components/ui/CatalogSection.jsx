@@ -1,5 +1,5 @@
 import { Heart, ShoppingCart,Star } from 'lucide-react';
-import logosimple from '../../assets/BLogo4k-white.png'; // ajusta la ruta si tu logo está en otro lugar
+import logosimple from '../../assets/BLogo4K-white.png'; // ajusta la ruta si tu logo está en otro lugar
 import { useState, useEffect } from 'react';
  import { getFavorites, toggleFavorite } from '../hooks/favorites';
 

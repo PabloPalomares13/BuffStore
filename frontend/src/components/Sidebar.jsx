@@ -1,7 +1,7 @@
 import React from 'react';
 import { Home, Package, Edit, Plus, ShoppingBag, FileText } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
-import logo from '../assets/BLogo4k-white.png'
+import logo from '../assets/BLogo4K-white.png'
  
 const Sidebar = ({ isOpen }) => {
   const location = useLocation();

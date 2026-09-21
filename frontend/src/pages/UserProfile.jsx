@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import {User,Mail,Phone,Cake,FileText,Pencil,Lock,ShoppingBag,Heart,CreditCard,MessageSquare,ShieldCheck,KeyRound,Gamepad2,Star,Calendar,Hash,Check,X,Plus,Trash2,Loader2,Camera,} from "lucide-react";
-import logo from "../assets/BLogo4k-white.png";
+import logo from "../assets/BLogo4K-white.png";
 const link = import.meta.env.PROD
   ? import.meta.env.VITE_BACKEND_URL
   : "http://localhost:3000";

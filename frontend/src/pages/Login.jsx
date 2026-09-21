@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import logo from '../assets/BLogo4k-white.png'
+import logo from '../assets/BLogo4K-white.png'
 import {useNavigate} from 'react-router-dom'
 import { mergeFavoritesOnLogin } from '../components/hooks/favorites';
 const link = import.meta.env.PROD 

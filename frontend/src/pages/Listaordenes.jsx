@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight, ChevronLeft, Download, Search, Eye, Trash } from 'lucide-react';
 import Swal from 'sweetalert2';
-import logobuff from '../assets/BLogo4k.png';
+import logobuff from '../assets/BLogo4K.png';
 import { 
   PDFDownloadLink, 
   Document, 

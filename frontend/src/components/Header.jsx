@@ -11,7 +11,7 @@ import {
   X,
   Heart,
 } from "lucide-react";
-import logo from "../assets/BLogo4k-white.png";
+import logo from "../assets/BLogo4K-white.png";
 import axios from "axios";
  
 export default function Header() {

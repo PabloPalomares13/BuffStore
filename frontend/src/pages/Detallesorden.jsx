@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Mail, Phone,AlertCircle } from 'lucide-react';
 import { PDFDownloadLink, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
-import logobuff from '../assets/BLogo4k.png';
+import logobuff from '../assets/BLogo4K.png';
 
 const link = import.meta.env.PROD 
   ? import.meta.env.VITE_BACKEND_URL

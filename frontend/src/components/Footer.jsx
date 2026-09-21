@@ -1,6 +1,6 @@
 
 import buffarcade from "../assets/BS_BG.png";
-import logo from "../assets/BLogo4k-white.png";
+import logo from "../assets/BLogo4K-white.png";
 
 
 export default function Footer() {
