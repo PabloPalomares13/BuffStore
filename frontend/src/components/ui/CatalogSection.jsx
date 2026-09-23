@@ -2,6 +2,7 @@ import { Heart, ShoppingCart,Star } from 'lucide-react';
 import logosimple from '../../assets/BLogo4K-white.png'; // ajusta la ruta si tu logo está en otro lugar
 import { useState, useEffect } from 'react';
  import { getFavorites, toggleFavorite } from '../hooks/favorites';
+import { useNavigate } from 'react-router-dom';
 
 /* ---------- Card individual ---------- */
  
@@ -27,17 +28,17 @@ function ProductCard({ product, index, handleAddToCart, handleProductClick,  isF
             e.stopPropagation();
             onToggleFavorite(product);
           }}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FF137A] shadow-[0_0_10px_rgba(255,19,122,0.6)] transition-transform hover:scale-105"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-[#FF137A]/80 shadow-[0_0_10px_rgba(255,19,122,0.6)] transition-transform hover:scale-105"
           aria-label="Añadir a favoritos"
         >
-          <Heart size={16} className="text-white" fill={isFavorite ? "white" : "none"} />
+          <Heart size={18} className="text-white/80" fill={isFavorite ? "white" : "none"} />
         </button>
         <button
           onClick={(e) => {
             e.stopPropagation();
             handleAddToCart(product);
           }}
-          className="flex h-8 w-8 items-center justify-center rounded-full bg-[#00FF37] shadow-[0_0_10px_rgba(0,255,55,0.6)] transition-transform hover:scale-105"
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-[#00FF37]/80 shadow-[0_0_10px_rgba(0,255,55,0.6)] transition-transform hover:scale-105"
           aria-label="Añadir al carrito"
         >
           <ShoppingCart size={16} className="text-black" />
@@ -148,6 +149,7 @@ export default function CatalogSection({
   const [showCartModal, setShowCartModal] = useState(false);
   const [addedProduct, setAddedProduct] = useState(null);
   const [favorites, setFavorites] = useState([]);
+   const navigate = useNavigate();
 
     const handleAddToCart = (product) => {
         
@@ -230,7 +232,7 @@ export default function CatalogSection({
         {/* Botón ver más */}
         <div className="mt-12 flex justify-center">
           <button
-            onClick={onViewAll}
+            onClick={() => navigate('/productos')}
             className="rounded-full border border-white/20 bg-white/10 backdrop-blur-sm px-8 py-3 font-haze text-sm tracking-wide text-white transition-colors hover:bg-white/20"
           >
             VER TODOS

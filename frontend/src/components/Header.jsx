@@ -172,7 +172,7 @@ export default function Header() {
  
   const navLinks = [
     { name: "Inicio", href: "/" },
-    { name: "Juegos", href: "#" },
+    { name: "Juegos", href: "/productos" },
     { name: "Categorias", href: "#" },
     { name: "Contactanos", href: "/contactsection" },
   ];

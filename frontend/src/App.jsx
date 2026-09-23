@@ -19,6 +19,7 @@ import CheckoutSuccess from './pages/CheckoutSuccess';
 import CheckoutFailure from './pages/CheckoutFailure';
 import CheckoutPending from './pages/CheckoutPending';
 import ContactSection from './pages/ContactSection';
+import Productos from './pages/Productos';
 
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
@@ -45,6 +46,7 @@ function App() {
       <Route path="/UserProfile" element={<ProtectedRoute requiredRoles={["user", "admin"]}><UserProfile /></ProtectedRoute>} />
       <Route path="/favorites" element={<FavoritesPage /> } />
       <Route path="/contactsection" element={<ContactSection />} />
+      <Route path="/productos" element={<Productos />} />
     </Route>
 
       
