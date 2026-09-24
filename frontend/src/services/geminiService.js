@@ -12,7 +12,7 @@ const geminiService = {
   // Enviar mensaje de texto a la API de Gemini
   sendTextMessage: async (message) => {
     try {
-      console.log('Enviando mensaje a:', `${API_URL}/gemini/text`);
+     // console.log('Enviando mensaje a:', `${API_URL}/gemini/text`);
       const response = await axios.post(`${API_URL}/gemini/text`, { message });
       return response.data;
     } catch (error) {

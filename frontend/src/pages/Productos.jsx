@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Heart, ShoppingCart, Star, SlidersHorizontal, X, ChevronDown, RefreshCw } from 'lucide-react';
 import logosimple from '../assets/BLogo4K-white.png'; // ajusta la ruta si tu logo está en otro lugar
 import { getFavorites, toggleFavorite } from '../components/hooks/favorites';
+import StarRating from '../components/ui/StartRating';
 
 /* ---------------------------------------------------------------------
    Config de API — mismo patrón que tu productService.js
@@ -344,26 +345,7 @@ function ProductCard({ product, onProductClick, onAddToCart, isFavorite, onToggl
     <>
       <h3 className="text-xl lg:text-lg text-white leading-tight break-words">{product.name}</h3>
  
-      <div className="flex items-center gap-1.5">
-        <div className="flex gap-0.5">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Star
-              key={i}
-              size={12}
-              className={
-                i < Math.round(product.rating || 0)
-                  ? 'fill-white text-white'
-                  : 'fill-white/20 text-white/20'
-              }
-            />
-          ))}
-        </div>
-        {product.rating != null && (
-          <span className="font-Urbanist text-xs text-white/70">
-            {Number(product.rating).toFixed(1)}/5
-          </span>
-        )}
-      </div>
+      <StarRating rating={product.rating} />
  
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
@@ -401,7 +383,7 @@ function ProductCard({ product, onProductClick, onAddToCart, isFavorite, onToggl
       className="group relative w-full cursor-pointer transition-transform duration-300 ease-out hover:scale-[1.02]"
     >
       {/* ===== Móvil / tablet (< lg): info superpuesta sobre la imagen, como antes ===== */}
-      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[20px] border border-white/30 lg:hidden">
+      <div className="relative aspect-[4/4] w-full overflow-hidden rounded-[20px] border border-white/30 lg:hidden">
         <img
           src={image}
           alt={product.name}
@@ -411,7 +393,7 @@ function ProductCard({ product, onProductClick, onAddToCart, isFavorite, onToggl
         {favCartButtons}
  
         <div className="absolute inset-3 flex flex-col justify-end overflow-hidden rounded-[20px]">
-          <img src={image} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          <img src={image} alt="fondo" className="absolute inset-0 h-full w-full object-cover" />
           <div className="relative">
             <div
               className="absolute -top-20 inset-x-0 bottom-0 rounded-b-[20px] bg-black/50 backdrop-blur-[60px]"
@@ -622,7 +604,7 @@ export default function Productos({
       </div>
       <img
         src={logosimple}
-        alt=""
+        alt="fondo"
         className="pointer-events-none absolute left-1/2 top-1/3 h-[420px] w-auto -translate-x-1/2 -translate-y-1/2 opacity-10 blur-sm"
       />
  
@@ -779,7 +761,7 @@ export default function Productos({
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
                 {filteredProducts.map((product) => (
                   <ProductCard
                     key={product._id}

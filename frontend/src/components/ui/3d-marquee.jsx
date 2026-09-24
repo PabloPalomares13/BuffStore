@@ -2,31 +2,41 @@
 
 import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
-export const ThreeDMarquee = ({
-  images,
-  className
-}) => {
-  // Split the images array into 4 equal parts
-  const chunkSize = Math.ceil(images.length / 4);
+export const ThreeDMarquee = ({ images = [], className }) => {
+  // 1. Filtrar URLs válidas
+  const rawImages = images.filter((img) => typeof img === "string" && img.trim() !== "");
+
+  // 2. Si la base de datos trae pocas imágenes, las duplicamos para que la cuadrícula
+  // tenga suficiente volumen (mínimo 16) y no se descuadre la posición 3D
+  let displayImages = rawImages;
+  if (rawImages.length > 0 && rawImages.length < 16) {
+    const repeatCount = Math.ceil(16 / rawImages.length);
+    displayImages = Array(repeatCount).fill(rawImages).flat();
+  }
+
+  // 3. Dividir en 4 columnas
+  const chunkSize = Math.max(1, Math.ceil(displayImages.length / 4));
   const chunks = Array.from({ length: 4 }, (_, colIndex) => {
     const start = colIndex * chunkSize;
-    return images.slice(start, start + chunkSize);
+    return displayImages.slice(start, start + chunkSize);
   });
- return (
+
+  return (
     <div
       className={cn(
-        "mx-auto block h-[280px] sm:h-[400px] lg:h-[600px] overflow-hidden rounded-2xl bg-gradient-to-r from-[#00FF37]/30 via-[#000000] to-[#FF137A]/30",
+        "mx-auto block h-[600px] overflow-hidden rounded-2xl max-sm:h-100 bg-gradient-to-r from-[#00FF37]/30 via-[#000000] to-[#FF137A]/30",
         className,
-      )}       
+      )}
     >
       <div className="flex size-full items-center justify-center">
-        <div className="size-[1720px] shrink-0 scale-100">
-          
+        <div className="perspective-1000 flex h-full w-full items-center justify-center">
           <div
             style={{
-              transform: "rotateX(55deg) rotateY(0deg) rotateZ(-45deg)",
+              transform: "rotateX(45deg) rotateY(0deg) rotateZ(-35deg)",
+              transformStyle: "preserve-3d",
             }}
-            className="relative top-96 right-[50%] grid size-full origin-top-left grid-cols-4 gap-8 transform-3d"
+            className="relative top-[15%] -left-[40%] scale-110 sm:top-[20%] sm:-left-[25%] sm:scale-75 md:top-96 md:left-[-15%] md:scale-100 grid size-full origin-top-left grid-cols-4 gap-8 transform-3d"
+            //className="relative top-10 left-[-5%] scale-50 sm:top-16 sm:left-[-5%] sm:scale-65 md:top-96 md:left-[-15%] md:scale-100 grid size-full origin-center grid-cols-4 gap-8 transform-3d"
           >
             {chunks.map((subarray, colIndex) => (
               <motion.div
@@ -39,10 +49,14 @@ export const ThreeDMarquee = ({
                 key={colIndex + "marquee"}
                 className="flex flex-col items-start gap-8"
               >
+                {/* Línea vertical intacta */}
                 <GridLineVertical className="-left-4" offset="80px" />
+
                 {subarray.map((image, imageIndex) => (
-                  <div className="relative" key={imageIndex + image}>
+                  <div className="relative" key={`${colIndex}-${imageIndex}-${image}`}>
+                    {/* Línea horizontal intacta */}
                     <GridLineHorizontal className="-top-4" offset="20px" />
+
                     <motion.img
                       whileHover={{
                         y: -10,
@@ -51,7 +65,6 @@ export const ThreeDMarquee = ({
                         duration: 0.3,
                         ease: "easeInOut",
                       }}
-                      key={imageIndex + image}
                       src={image}
                       alt={`Image ${imageIndex + 1}`}
                       className="aspect-[970/700] rounded-lg object-cover ring ring-gray-950/5 hover:shadow-2xl"

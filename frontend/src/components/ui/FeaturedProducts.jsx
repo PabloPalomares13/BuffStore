@@ -177,13 +177,6 @@ function BigCard({ product, icons, cycleKey, rotateIntervalMs }) {
     setVideoError(null);
   }, [product._id]);
 
-  // DIAGNÓSTICO TEMPORAL — borra este bloque cuando confirmes qué está pasando
-  useEffect(() => {
-    console.log("[BigCard] producto:", product.name);
-    console.log("[BigCard] media completo:", product.media);
-    console.log("[BigCard] videoItem encontrado:", videoItem);
-  }, [product, videoItem]);
-
   // Fix del bug de React con "muted" en <video>: forzarlo vía la propiedad
   // del DOM, no solo el atributo JSX, para que el autoplay no sea bloqueado
   // silenciosamente por el navegador.

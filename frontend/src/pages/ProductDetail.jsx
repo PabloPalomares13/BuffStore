@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Loader2,X,CheckCircle,Video,  ShoppingCart, Plus, Minus } from 'lucide-react';
+import ReviewsSection from '../components/ReviewsSection';
 
 const ProductDetail = () => {
   const { id } = useParams(); // Obtener el ID del producto desde la URL
@@ -550,43 +551,8 @@ const ProductDetail = () => {
                   )}
 
                   {activeTab === 'reviews' && (
-                    <div className="space-y-4 animate-fadeIn">
-                      <p className="text-gray-300 leading-relaxed mb-6">
-                        Con más de {product.ratingsCount || 937} reseñas positivas, {product.name} ha cautivado a 
-                        jugadores de todo el mundo. Los usuarios destacan sus impresionantes gráficos de última generación, 
-                        su fluida jugabilidad y una historia emocionante.
-                      </p>
-
-                      {/* Ejemplos de reseñas */}
-                      {[
-                        { author: 'JM', name: 'Jorge Martínez', rating: 5, text: 'Una obra maestra visual y narrativa. Los gráficos son impresionantes y el gameplay es súper fluido. Vale cada peso.', helpful: 24, date: 'Hace 2 días' },
-                        { author: 'AL', name: 'Andrea López', rating: 5, text: 'El mejor juego que he jugado. El sistema de combate es adictivo. Totalmente recomendado.', helpful: 18, date: 'Hace 5 días' },
-                        { author: 'CR', name: 'Carlos Ruiz', rating: 4, text: 'Excelente juego aunque un poco corto. La banda sonora es increíble. Compra recomendada.', helpful: 31, date: 'Hace 1 semana' }
-                      ].map((review, idx) => (
-                        <div key={idx} className="bg-white/3 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:bg-white/5 hover:border-[#ff0055] transition-all">
-                          <div className="flex justify-between items-start mb-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#ff0055] to-[#00d9ff] flex items-center justify-center font-bold text-sm">
-                                {review.author}
-                              </div>
-                              <div>
-                                <div className="font-semibold text-sm">{review.name}</div>
-                                <div className="text-xs text-gray-500">{review.date}</div>
-                              </div>
-                            </div>
-                            <div className="flex gap-1 text-[#ffaa00]">
-                              {'★'.repeat(review.rating)}{'☆'.repeat(5 - review.rating)}
-                            </div>
-                          </div>
-                          <p className="text-gray-300 text-sm leading-relaxed mb-4">{review.text}</p>
-                          <div className="flex items-center gap-3 pt-4 border-t border-white/10 text-sm text-gray-400">
-                            <span>¿Te resultó útil?</span>
-                            <button className="bg-white/5 border border-white/10 px-3 py-1 rounded-lg hover:bg-[#00ff88]/10 hover:border-[#00ff88] hover:text-[#00ff88] transition-all">
-                              👍 Sí ({review.helpful})
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="animate-fadeIn">
+                      <ReviewsSection productId={product._id} productName={product.name} />
                     </div>
                   )}
                 </div>

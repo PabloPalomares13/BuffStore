@@ -148,7 +148,6 @@ export default function Header() {
           `${link}/api/products/search`,
           { params: { q: searchQuery } }
         );
-        console.log("RESPUESTA BACKEND:", res.data);
         setSearchResults(res.data.products || res.data); // ajusta según lo que devuelva tu endpoint
         setShowResults(true);
       } catch (error) {

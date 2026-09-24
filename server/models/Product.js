@@ -36,6 +36,8 @@ const productSchema = new mongoose.Schema({
     enum: ['digital', 'physical'],
     default: 'digital'
   },
+  reviewsAvg: { type: Number, default: 0 },
+  reviewsCount: { type: Number, default: 0 }, 
   // --- Metadata de RAWG.io (vía Gemini), agregada para el autocompletado ---
   rawgId: { type: Number, default: null },
   releaseDate: { type: String, default: '' },

@@ -3,6 +3,7 @@ import logosimple from '../../assets/BLogo4K-white.png'; // ajusta la ruta si tu
 import { useState, useEffect } from 'react';
  import { getFavorites, toggleFavorite } from '../hooks/favorites';
 import { useNavigate } from 'react-router-dom';
+import StarRating from '../ui/StartRating';
 
 /* ---------- Card individual ---------- */
  
@@ -74,26 +75,7 @@ function ProductCard({ product, index, handleAddToCart, handleProductClick,  isF
             </h3>
  
             {/* Calificación (placeholder mientras no tengas la variable real) */}
-            <div className="flex items-center gap-1.5">
-              <div className="flex gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    size={12}
-                    className={
-                      i < Math.round(product.rating || 0)
-                        ? 'fill-white text-white'
-                        : 'fill-white/20 text-white/20'
-                    }
-                  />
-                ))}
-              </div>
-              {product.rating != null && (
-                <span className="font-Urbanist text-xs text-white/70">
-                  {Number(product.rating).toFixed(1)}/5
-                </span>
-              )}
-            </div>
+            <StarRating rating={product.rating} />
  
             {/* Tags: máximo 3, cada uno se trunca para que no se peguen entre sí */}
             {tags.length > 0 && (

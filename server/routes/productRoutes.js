@@ -4,7 +4,7 @@ const multer = require('multer');
 const Product = require('../models/Product');
 const { uploadFileToGCS, deleteFileFromGCS, generateFileName, generatePosterFileName, processAndUploadVideo } = require('../config/storage');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
-const { getFeaturedProducts, searchProducts  } = require('../Controllers/productControllers');
+const { getFeaturedProducts, searchProducts, setFeatured } = require('../Controllers/productControllers');
 
 // Configuración de multer para manejar archivos en memoria
 const storage = multer.memoryStorage();
@@ -103,7 +103,8 @@ router.post('/', protect, isAdmin, upload.fields([{ name: 'images', maxCount: 10
         codes.push({ product: productId, code });
       }
       await GameCode.insertMany(codes);
-      console.log(`${codes.length} códigos generados para el producto ${productId}`);
+      
+      //console.log(`${codes.length} códigos generados para el producto ${productId}`);
     };
 
     if (savedProduct.stock > 0) {
@@ -432,5 +433,7 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+router.patch('/:id/featured', protect, isAdmin, setFeatured);
 
 module.exports = router;

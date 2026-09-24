@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight,ShoppingCart } from "lucide-react";
 import { getFeaturedProducts } from "../services/productService";
 import FeaturedProducts from "../components/ui/FeaturedProducts";
 import CatalogSection from '../components/ui/CatalogSection';
-import { ThreeDMarquee } from "@/components/ui/3d-marquee-copy";
+import { ThreeDMarquee } from "@/components/ui/3d-marquee";
 
 
 import 'react-lazy-load-image-component/src/effects/blur.css'; 

@@ -10,7 +10,7 @@ const link = import.meta.env.PROD
 
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '[#FFFFFF]',
     padding: 30,
   },
   logog: {
@@ -115,11 +115,11 @@ const ProductsDocument = ({ products }) => {
   
   const getStatusStyles = (stock) => {
     if (stock > 5) {
-      return { style: styles.statusInStock, text: 'In Stock' };
+      return { style: styles.statusInStock, text: 'Disponible' };
     } else if (stock > 0) {
-      return { style: styles.statusLimited, text: 'Limited' };
+      return { style: styles.statusLimited, text: 'Limitado' };
     } else {
-      return { style: styles.statusOutOfStock, text: 'Out Of Stock' };
+      return { style: styles.statusOutOfStock, text: 'Agotado' };
     }
   };
 
@@ -197,6 +197,43 @@ const ProductsDocument = ({ products }) => {
 
 
 const PRODUCTS_PER_PAGE = 10;
+const MAX_FEATURED = 5;
+
+// Tema oscuro para SweetAlert2, acorde al resto del panel
+const swalTheme = {
+  background: '#1b1b1b',
+  color: '#ffffff',
+  confirmButtonColor: '#FF137A',
+  cancelButtonColor: '#3a3a3a',
+};
+
+// Los nombres se insertan como HTML dentro de SweetAlert2, así que se escapan
+const escapeHtml = (str = '') =>
+  String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// Interruptor: verde neón = destacado (featured: true), rosa neón = apagado
+const FeaturedSwitch = ({ active, loading, name, onToggle }) => (
+  <button
+    type="button"
+    role="switch"
+    aria-checked={active}
+    aria-label={`${active ? 'Quitar de destacados' : 'Destacar'}: ${name}`}
+    title={active ? 'Destacado. Clic para quitar' : 'No destacado. Clic para destacar'}
+    onClick={onToggle}
+    disabled={loading}
+    className={`relative inline-flex h-7 w-14 shrink-0 items-center rounded-full border transition-colors duration-200 focus:outline-none focus-visible:ring-2 disabled:opacity-60 disabled:cursor-wait ${
+      active
+        ? 'border-[#00FF37]/60 bg-[#00FF37]/15 shadow-[0_0_12px_-2px_#00FF37] focus-visible:ring-[#00FF37]/60'
+        : 'border-[#FF137A]/60 bg-[#FF137A]/15 shadow-[0_0_10px_-3px_#FF137A] focus-visible:ring-[#FF137A]/60'
+    }`}
+  >
+    <span
+      className={`inline-block h-5 w-5 rounded-full transition-transform duration-200 ${
+        active ? 'translate-x-[30px] bg-[#00FF37]' : 'translate-x-1 bg-[#FF137A]'
+      }`}
+    />
+  </button>
+);
 
 const Listaproductos = () => {
   
@@ -207,6 +244,7 @@ const Listaproductos = () => {
   const [error, setError] = useState(null);
   const [isClient, setIsClient] = useState(false);
   const [pdfReady, setPdfReady] = useState(false);
+  const [featuredLoadingId, setFeaturedLoadingId] = useState(null);
   
  
   useEffect(() => {
@@ -246,11 +284,11 @@ const Listaproductos = () => {
  
   const getStatusStyles = (stock) => {
     if (stock > 5) {
-      return { containerClass: 'bg-green-50 text-green-500', dotClass: 'text-green-500', status: 'In Stock' };
+      return { containerClass: 'bg-[#00FF37]/10 border-[#00FF37] text-green-500', dotClass: 'text-green-500', status: 'Disponible' };
     } else if (stock > 0) {
-      return { containerClass: 'bg-amber-50 text-amber-500', dotClass: 'text-amber-500', status: 'Limited' };
+      return { containerClass: 'bg-[#FFC107]/10 border-[#FFC107] text-amber-500', dotClass: 'text-amber-500', status: 'Limitado' };
     } else {
-      return { containerClass: 'bg-red-50 text-red-500', dotClass: 'text-red-500', status: 'Out Of Stock' };
+      return { containerClass: 'bg-[#FF137A]/10  border-[#FF137A] text-red-500', dotClass: 'text-red-500', status: 'Agotado' };
     }
   };
 
@@ -319,6 +357,118 @@ const Listaproductos = () => {
     }
   };
 
+  // ───────── Productos destacados (máx. 5) ─────────
+  const featuredProducts = products.filter((p) => p.featured);
+  const featuredCount = featuredProducts.length;
+
+  const requestFeatured = async (id, featured, replaceId) => {
+    const token = localStorage.getItem('userToken');
+    const response = await fetch(`${link}/api/products/${id}/featured`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ featured, ...(replaceId && { replaceId }) }),
+    });
+    const data = await response.json().catch(() => ({}));
+    return { ok: response.ok, status: response.status, data };
+  };
+
+  // Sincroniza el estado local con la lista de ids destacados que devuelve el servidor
+  const applyFeaturedIds = (ids) => {
+    setProducts((prev) => prev.map((p) => ({ ...p, featured: ids.includes(p._id) })));
+  };
+
+  // Pregunta cuál de los destacados actuales se reemplaza. Devuelve el id o null si cancela.
+  // La lista es HTML propio (no el input "radio" de SweetAlert2, que trae fondo blanco fijo).
+  const askReplacement = async (product, currentFeatured) => {
+    const options = currentFeatured
+      .map(
+        (p) => `
+          <label class="fp-opt">
+            <input type="radio" name="replace-featured" value="${escapeHtml(p._id)}" />
+            <span>${escapeHtml(p.name)}</span>
+          </label>`
+      )
+      .join('');
+
+    const { isConfirmed, value } = await Swal.fire({
+      ...swalTheme,
+      icon: 'info',
+      title: `Ya hay ${MAX_FEATURED} productos destacados`,
+      html: `
+        <style>
+          .fp-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; text-align: left; }
+          .fp-opt { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border: 1px solid rgba(255,255,255,.2); border-radius: 9999px; color: #fff; cursor: pointer; transition: background .15s, border-color .15s, box-shadow .15s; }
+          .fp-opt:hover { background: rgba(255,255,255,.08); }
+          .fp-opt:has(input:checked) { border-color: rgba(255,19,122,.7); background: rgba(255,19,122,.12); box-shadow: 0 0 12px -2px #FF137A; }
+          .fp-opt input { accent-color: #FF137A; width: 18px; height: 18px; margin: 0; flex-shrink: 0; }
+        </style>
+        <p>Para destacar <b style="color:#00FF37">${escapeHtml(product.name)}</b> tienes que quitar uno. ¿Cuál quieres reemplazar?</p>
+        <div class="fp-list">${options}</div>`,
+      showCancelButton: true,
+      confirmButtonText: 'Reemplazar',
+      cancelButtonText: 'Cancelar',
+      preConfirm: () => {
+        const selected = Swal.getPopup().querySelector('input[name="replace-featured"]:checked');
+        if (!selected) {
+          Swal.showValidationMessage('Elige el producto que quieres reemplazar');
+          return false;
+        }
+        return selected.value;
+      },
+    });
+
+    return isConfirmed ? value : null;
+  };
+
+  const handleToggleFeatured = async (product) => {
+    if (featuredLoadingId) return;
+
+    const turningOn = !product.featured;
+    let replaceId;
+
+    // Cupo lleno: hay que elegir a quién reemplazar
+    if (turningOn && featuredCount >= MAX_FEATURED) {
+      replaceId = await askReplacement(product, featuredProducts);
+      if (!replaceId) return;
+    }
+
+    setFeaturedLoadingId(product._id);
+    try {
+      let result = await requestFeatured(product._id, turningOn, replaceId);
+
+      // El servidor tiene el cupo lleno aunque esta pantalla estuviera desactualizada
+      if (result.status === 409 && Array.isArray(result.data?.featured)) {
+        replaceId = await askReplacement(product, result.data.featured);
+        if (!replaceId) return;
+        result = await requestFeatured(product._id, true, replaceId);
+      }
+
+      if (!result.ok) {
+        throw new Error(result.data?.message || 'No se pudo actualizar el producto destacado');
+      }
+
+      applyFeaturedIds(result.data.featuredIds || []);
+
+      Swal.fire({
+        ...swalTheme,
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: turningOn ? 'Producto destacado' : 'Producto quitado de destacados',
+        showConfirmButton: false,
+        timer: 1800,
+      });
+    } catch (err) {
+      console.error(err);
+      Swal.fire({ ...swalTheme, icon: 'error', title: 'Error', text: err.message });
+    } finally {
+      setFeaturedLoadingId(null);
+    }
+  };
+
   return (
     <div className="relative bg-[#232323]/40 backdrop-blur-md rounded-[20px] shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] shadow-[#000000]/70 p-6 overflow-hidden"
       style={{ fontFamily: '"Urbanist", sans-serif' }}>
@@ -331,6 +481,17 @@ const Listaproductos = () => {
           Lista de <span className="text-[#00FF37]">Productos</span>
         </h1>
         <div className="flex items-center gap-3 flex-wrap">
+          {/* Contador de destacados */}
+          <div
+            className={`px-4 py-2 rounded-full text-sm font-Urbanist border backdrop-blur-md flex items-center gap-2 transition-colors ${
+              featuredCount >= MAX_FEATURED
+                ? 'bg-black/50 border-[#00FF37]/40 text-[#00FF37] shadow-[0_0_12px_-2px_#00FF37]'
+                : 'bg-white/10 border-white/20 text-white/80'
+            }`}
+          >
+            Destacados
+            <span className="font-semibold">{featuredCount}/{MAX_FEATURED}</span>
+          </div>
           {/* Search input */}
           <div className="relative w-60 max-w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40" size={18} />
@@ -396,6 +557,7 @@ const Listaproductos = () => {
                   <th className="text-center py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Stock</th>
                   <th className="sm:text-center md:text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Estado</th>
                   <th className="sm:text-center md:text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Precio</th>
+                  <th className="text-center py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Destacado</th>
                   <th className="py-4 px-5"></th>
                 </tr>
               </thead>
@@ -420,6 +582,16 @@ const Listaproductos = () => {
                         </div>
                       </td>
                       <td className="py-4 px-5 font-Urbanist font-medium text-white">${Number(product.price).toLocaleString('en-US')}</td>
+                      <td className="py-4 px-5">
+                        <div className="flex justify-center">
+                          <FeaturedSwitch
+                            active={!!product.featured}
+                            loading={featuredLoadingId === product._id}
+                            name={product.name}
+                            onToggle={() => handleToggleFeatured(product)}
+                          />
+                        </div>
+                      </td>
                       <td className="py-4 px-5">
                         <div className="flex justify-end gap-2">
                         <button
