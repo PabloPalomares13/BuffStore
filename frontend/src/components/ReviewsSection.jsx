@@ -7,7 +7,7 @@ import {
   updateReview,
   deleteReview
 } from '../services/ReviewService';
-import StoreFeedbackBox from './StorefeedbackBox';
+import StoreFeedbackBox from './Storefeedbackbox';
 
 const PAGE_SIZE = 10;
 const MAX_CHARS = 500;
