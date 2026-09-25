@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const Product = require('../models/Product');
-const { uploadFileToGCS, deleteFileFromGCS, generateFileName, generatePosterFileName, processAndUploadVideo } = require('../config/storage');
+const { uploadFileToGCS, deleteFileFromGCS,deleteFolderFromGCS, generateFileName, generatePosterFileName, processAndUploadVideo } = require('../config/storage');
 const { protect, isAdmin } = require('../middleware/authMiddleware');
 const { getFeaturedProducts, searchProducts, setFeatured } = require('../Controllers/productControllers');
 
@@ -30,21 +30,34 @@ const upload = multer({
 
 // Genera un código único de 2 letras + 3 números (ej: "AB123"), verificando
 // contra la base de datos. Reintenta si hay colisión.
-const generateUniqueProductCode = async () => {
-  const letras = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const slugifyName = (name, len) => {
+  if (!name) return '';
+  return name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // quita tildes
+    .replace(/[^a-zA-Z0-9]/g, '')    // deja solo letras y números
+    .toUpperCase()
+    .slice(0, len);
+};
+ 
+// Código único y legible por producto, ej: "GOWRAGN482".
+// Las primeras letras salen del nombre (así se identifica fácil en GCP/logs),
+// seguidas de un número aleatorio para evitar choques entre productos con
+// nombres parecidos ("Call of Duty: Modern Warfare" vs "...Warfare II").
+const generateUniqueProductCode = async (name = '') => {
+  const prefix = slugifyName(name, 6) || 'PROD'; // sin nombre válido, usa un prefijo genérico
   const maxIntentos = 10;
-
+ 
   for (let intento = 0; intento < maxIntentos; intento++) {
-    const l1 = letras[Math.floor(Math.random() * letras.length)];
-    const l2 = letras[Math.floor(Math.random() * letras.length)];
     const numeros = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    const code = `${l1}${l2}${numeros}`;
-
+    const code = `${prefix}${numeros}`;
+ 
     const existe = await Product.findOne({ code }).select('_id').lean();
     if (!existe) return code;
   }
-
-  return `XX${Date.now().toString().slice(-3)}`;
+ 
+  // Fallback si 10 intentos chocaron (muy improbable): usa timestamp para garantizar unicidad
+  return `${prefix}${Date.now().toString().slice(-4)}`;
 };
  const parseArrayField = (value) => {
   if (value === undefined || value === null || value === '') return [];
@@ -68,7 +81,7 @@ router.post('/', protect, isAdmin, upload.fields([{ name: 'images', maxCount: 10
 
     // El código SIEMPRE se genera en el backend, nunca se confía en uno
     // que venga del cliente (req.body.code, si llegara, se ignora).
-    const code = await generateUniqueProductCode();
+    const code = await generateUniqueProductCode(req.body.name);
 
     const product = new Product({
       ...req.body,
@@ -114,7 +127,7 @@ router.post('/', protect, isAdmin, upload.fields([{ name: 'images', maxCount: 10
     if (req.files.images && req.files.images.length > 0) {
       for (let i = 0; i < req.files.images.length; i++) {
         const file = req.files.images[i];
-        const fileName = generateFileName(file.originalname, savedProduct._id, i);
+        const fileName = generateFileName(file.originalname, savedProduct.code, i, savedProduct.name);
 
         try {
           const imageUrl = await uploadFileToGCS(file, fileName);
@@ -135,7 +148,9 @@ router.post('/', protect, isAdmin, upload.fields([{ name: 'images', maxCount: 10
 
       for (let i = 0; i < videoCount; i++) {
         const file = req.files.videos[i];
-        const videoFileName = `products/${savedProduct._id}/videos/${Date.now()}_${i}.mp4`;
+        const videoSlug = slugifyName(savedProduct.name, 12) || 'GAME';
+        const videoRandom = crypto.randomBytes(3).toString('hex');
+        const videoFileName = `products/${savedProduct.code}/videos/${videoSlug}_${Date.now()}_${i}_${videoRandom}.mp4`;
 
         // Toma el flag de este video específico, default true si no llegó
         const shouldProcess = videoProcessFlags[i] !== undefined ? videoProcessFlags[i] : true;
@@ -166,7 +181,7 @@ router.post('/', protect, isAdmin, upload.fields([{ name: 'images', maxCount: 10
     // como valor de "type"), la distinción es isPoster: true.
     if (req.files.poster && req.files.poster.length > 0) {
       const posterFile = req.files.poster[0];
-      const posterFileName = generatePosterFileName(posterFile.originalname, savedProduct._id);
+      const posterFileName = generatePosterFileName(posterFile.originalname, savedProduct.code, savedProduct.name);
 
       try {
         const posterUrl = await uploadFileToGCS(posterFile, posterFileName);
@@ -409,23 +424,23 @@ router.delete('/:id', protect, isAdmin, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ error: 'Producto no encontrado' });
-
-    // Eliminar todos los archivos de GCS (imágenes Y videos)
-    if (product.media && product.media.length > 0) {
-      for (const mediaItem of product.media) {
-        try {
-          await deleteFileFromGCS(mediaItem.fileName);
-          console.log(`Archivo eliminado: ${mediaItem.fileName}`);
-        } catch (deleteError) {
-          console.error('Error deleting file:', mediaItem.fileName, deleteError);
-        }
-      }
-    }
+ 
+    // Borra TODA la carpeta del producto en GCS de una sola vez
+    // (imágenes, videos, poster, thumbnails). "best effort": si falla,
+    // no detiene el borrado del producto en la base de datos.
+    // Usa product.code (la carpeta se nombra así, no con el _id) — ver sección 4.
+    await deleteFolderFromGCS(`products/${product.code}/`);
+ 
     // Eliminar códigos de juego asociados
     const GameCode = require('../models/GameCode');
     await GameCode.deleteMany({ product: product._id });
     console.log(`Códigos de juego eliminados para producto ${product._id}`);
-
+ 
+    // Eliminar favoritos huérfanos que apuntaban a este producto
+    // (evita el error "Cannot read properties of null" en el frontend)
+    const Favorite = require('../models/Favorites');
+    await Favorite.deleteMany({ productId: product._id });
+ 
     await Product.findByIdAndDelete(req.params.id);
     res.json({ message: 'Producto eliminado con éxito' });
   } catch (error) {

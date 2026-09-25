@@ -641,7 +641,8 @@ const Modproducto = () => {
                       name="code"
                       value={productData.code}
                       onChange={handleInputChange}
-                      className="w-full px-4 py-2 rounded-full border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none focus:border-[#00FF37]/50 focus:shadow-[0_0_12px_-2px_#00FF37] transition-colors"
+                      disabled // 👈 Esto bloquea la edición y el foco del teclado
+                      className="w-full px-4 py-2 rounded-full border border-white/20 bg-white/10 text-white placeholder-white/40 focus:outline-none focus:border-[#00FF37]/50 focus:shadow-[0_0_12px_-2px_#00FF37] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       placeholder="Código"
                     />
                   </div>

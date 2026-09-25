@@ -4,18 +4,23 @@ const link = import.meta.env.PROD
 
 const isLoggedIn = () => !!localStorage.getItem('userToken');
 
+// Filtra entradas nulas o sin _id (por ejemplo, favoritos de productos ya eliminados
+// que hayan quedado guardados en localStorage de una sesión de invitado)
+const cleanList = (list) => (Array.isArray(list) ? list.filter((f) => f && f._id) : []);
+
 export async function getFavorites() {
   if (isLoggedIn()) {
     const res = await fetch(`${link}/api/favoritos`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('userToken')}` },
     });
-    return res.ok ? await res.json() : [];
+    return res.ok ? cleanList(await res.json()) : [];
   }
-  return JSON.parse(localStorage.getItem('favorites')) || [];
+  return cleanList(JSON.parse(localStorage.getItem('favorites')));
 }
 
 export async function toggleFavorite(product, currentFavorites) {
-  const exists = currentFavorites.some(f => f._id === product._id);
+  const safeFavorites = cleanList(currentFavorites);
+  const exists = safeFavorites.some(f => f._id === product._id);
 
   if (isLoggedIn()) {
     if (exists) {
@@ -34,21 +39,21 @@ export async function toggleFavorite(product, currentFavorites) {
       });
     }
     return exists
-      ? currentFavorites.filter(f => f._id !== product._id)
-      : [...currentFavorites, product];
+      ? safeFavorites.filter(f => f._id !== product._id)
+      : [...safeFavorites, product];
   }
 
   // Invitado: solo localStorage
   const updated = exists
-    ? currentFavorites.filter(f => f._id !== product._id)
-    : [...currentFavorites, product];
+    ? safeFavorites.filter(f => f._id !== product._id)
+    : [...safeFavorites, product];
   localStorage.setItem('favorites', JSON.stringify(updated));
   return updated;
 }
 
 // Llamar justo después de un login exitoso
 export async function mergeFavoritesOnLogin() {
-  const localFavorites = JSON.parse(localStorage.getItem('favorites')) || [];
+  const localFavorites = cleanList(JSON.parse(localStorage.getItem('favorites')));
   const localIds = localFavorites.map(f => f._id);
 
   const res = await fetch(`${link}/api/favoritos/merge`, {
@@ -60,7 +65,7 @@ export async function mergeFavoritesOnLogin() {
     body: JSON.stringify({ productIds: localIds }),
   });
 
-  const merged = res.ok ? await res.json() : localFavorites;
+  const merged = res.ok ? cleanList(await res.json()) : localFavorites;
   localStorage.removeItem('favorites'); // ya vive en el backend
   return merged;
 }
