@@ -1,7 +1,7 @@
 import axios from 'axios';
  
 const API = import.meta.env.PROD
-  ? import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/store-feedback`
   : 'http://localhost:3000/api/store-feedback';
  
 const authHeaders = () => {

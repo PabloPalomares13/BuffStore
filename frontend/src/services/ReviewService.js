@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = import.meta.env.PROD
-  ? import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/reviews`
   : 'http://localhost:3000/api/reviews';
 
 const authHeaders = () => {
