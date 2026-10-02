@@ -199,20 +199,6 @@ const createPaymentPreference = async (req, res) => {
     });
   }
 };
-
-/**
- * Webhook para recibir notificaciones de Mercado Pago (IPN)
- */
-/**
- * Procesa el resultado de un pago ya consultado a Mercado Pago:
- * actualiza el registro de Payment, marca la orden como pagada y
- * entrega los códigos digitales si corresponde. La usan tanto el
- * webhook como el endpoint de verificación manual (fallback para
- * cuando el webhook de sandbox no llega, ej: merchant_order bloqueado).
- *
- * Es idempotente: si el pago ya estaba marcado como 'approved' en
- * nuestra DB, no vuelve a entregar códigos ni a mandar el correo.
- */
 const processPaymentResult = async (paymentData) => {
   console.log('💳 Información del pago:', {
     id: paymentData.id,
@@ -274,30 +260,18 @@ const processPaymentResult = async (paymentData) => {
 };
 
 const handleWebhook = async (req, res) => {
-  // Mercado Pago manda notificaciones en DOS formatos distintos según el flujo:
-  // - Formato nuevo: { type: 'payment', data: { id } } en el body, y a veces
-  //   como query string ?data.id=...&type=payment
-  // - IPN viejo: ?topic=payment|merchant_order&id=... en la query string,
-  //   con un body { resource, topic }
+ 
   const type = req.body?.type || req.query?.type || req.query?.topic;
   const rawId = req.body?.data?.id || req.query?.['data.id'] || req.query?.id;
 
   console.log('📨 Webhook recibido:', { type, rawId, query: req.query, body: req.body });
 
-  // Respondemos 200 YA, antes de procesar nada. Mercado Pago espera un ACK
-  // rápido; si tardamos consultando el pago o algo falla del lado nuestro,
-  // no queremos que MP lo interprete como fallo y reintente en bucle.
   res.status(200).send('OK');
 
   if (!type || !rawId) {
     return;
   }
 
-  // Las notificaciones de tipo merchant_order están bloqueadas por una
-  // política de Mercado Pago en cuentas de prueba/sandbox
-  // (PA_UNAUTHORIZED_RESULT_FROM_POLICIES). No hace falta consultarlas:
-  // Mercado Pago también manda una notificación aparte de type: 'payment'
-  // con toda la info que necesitamos, así que simplemente la ignoramos.
   if (type === 'merchant_order') {
     try {
       const client = new mercadopago.MercadoPagoConfig({

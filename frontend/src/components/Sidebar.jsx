@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Package, Edit, Plus, ShoppingBag, FileText } from 'lucide-react';
+import { Home, Package, Edit, Plus, ShoppingBag, FileText, User, Flag, Star} from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import logo from '../assets/BLogo4K-white.png'
  
@@ -41,6 +41,12 @@ const Sidebar = ({ isOpen }) => {
               active={currentPath === "/dashboard" || currentPath === "/"}
             />
             <SidebarItem
+              icon={<User size={20} />}
+              text="Usuarios"
+              to="/Usuarios"
+              active={currentPath === "/Usuarios"}
+            />
+            <SidebarItem
               icon={<Package size={20} />}
               text="Lista de productos"
               to="/ListaProductos"
@@ -69,6 +75,18 @@ const Sidebar = ({ isOpen }) => {
               text="Detalles de pedido"
               to="/Detallesorden"
               active={currentPath === "/Detallesorden"}
+            />
+            <SidebarItem
+              icon={<Star size={20} />}
+              text="Reseñas"
+              to="/Resenas"
+              active={currentPath === "/Resenas"}
+            />
+            <SidebarItem
+              icon={<Flag size={20} />}
+              text="Reportes"
+              to="/Reportes"
+              active={currentPath === "/Reportes"}
             />
           </div>
         </nav>

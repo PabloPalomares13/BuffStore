@@ -63,6 +63,12 @@ const loginUser = async (req, res) => {
 
     // Si el usuario existe y la contraseña coincide
     if (user && (await user.comparePassword(password))) {
+      if (user.isBlocked) {
+        return res.status(403).json({
+          message: 'Tu cuenta está suspendida. Contacta a soporte.',
+          code: 'ACCOUNT_BLOCKED',
+        });
+      }
       res.json({
         _id: user._id,
         email: user.email,

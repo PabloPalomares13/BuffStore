@@ -33,7 +33,6 @@ export default function Header() {
   const mobileSearchButtonRef = useRef(null);
   const mobileSearchPanelRef = useRef(null);
 
-
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -310,7 +309,8 @@ export default function Header() {
           <div className="flex items-center gap-2.5">
             
             {/* Favoritos: contorno neon verde/rosa, siempre difuminado, colores en esquinas opuestas */}
-            <div className="relative shrink-0">
+            {/* CAMBIO: oculto en móvil/tablet, visible solo desde md hacia arriba */}
+            <div className="hidden md:block relative shrink-0">
               <a
               href="/favorites"
               className="relative flex h-9 items-center gap-2 rounded-full bg-black/55 px-3.5 text-sm font-medium text-white backdrop-blur-md sm:px-4"
@@ -331,7 +331,8 @@ export default function Header() {
             </div>
             
             {/* Carrito: contorno neon verde/rosa, siempre difuminado, colores en esquinas opuestas */}
-            <div className="relative shrink-0">
+            {/* CAMBIO: oculto en móvil/tablet, visible solo desde md hacia arriba */}
+            <div className="hidden md:block relative shrink-0">
               
               <a
               href="/Checkout"
@@ -484,10 +485,10 @@ export default function Header() {
       {/* Menú móvil: links de navegación */}
       <div
         className={`md:hidden overflow-hidden transition-all duration-300 ${
-          isMenuOpen ? "max-h-64 border-t border-white/10" : "max-h-0"
+          isMenuOpen ? "max-h-70 border-t border-white/10" : "max-h-0"
         }`}
       >
-        <nav className="flex flex-col px-4 py-3 gap-1 bg-black/40 backdrop-blur-lg">
+        <nav className="flex flex-col px-4 py-1 gap-1 bg-black/40 backdrop-blur-lg">
           {navLinks.map((link) => (
             <a
               key={link.name}
@@ -498,6 +499,26 @@ export default function Header() {
               {link.name}
             </a>
           ))}
+
+          {/* CAMBIO: Favoritos movido aquí para pantallas pequeñas */}
+          <a
+            href="/favorites"
+            onClick={() => setIsMenuOpen(false)}
+            className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-white/85 hover:bg-white/10"
+          >
+            <Heart size={16} />
+            Favoritos
+          </a>
+
+          {/* CAMBIO: Carrito/Checkout movido aquí para pantallas pequeñas */}
+          <a
+            href="/Checkout"
+            onClick={() => setIsMenuOpen(false)}
+            className="flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm text-white/85 hover:bg-white/10"
+          >
+            <ShoppingCart size={16} />
+            Carrito
+          </a>
         </nav>
       </div>
     </header>

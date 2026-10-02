@@ -23,6 +23,14 @@ const protect = async (req, res, next) => {
       return res.status(401).json({ message: 'No autorizado, usuario no encontrado' });
     }
 
+    // Cuenta suspendida por un administrador
+    if (user.isBlocked) {
+      return res.status(403).json({
+        message: 'Tu cuenta está suspendida. Contacta a soporte.',
+        code: 'ACCOUNT_BLOCKED',
+      });
+    }
+
     req.user = user;
     next();
   } catch (error) {
@@ -39,7 +47,8 @@ const optionalAuth = async (req, res, next) => {
   if (token) {
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.id).select('-password');
+      const user = await User.findById(decoded.id).select('-password');
+      req.user = user && !user.isBlocked ? user : null;
     } catch (error) {
       req.user = null;
     }

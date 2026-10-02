@@ -50,10 +50,19 @@ const userSchema = new mongoose.Schema({
     default: '', // si está vacío, el frontend usa el avatar por defecto
   },
   // ============ FIN DATOS DE PERFIL ============
+
+  // Cuenta suspendida por un administrador
+  isBlocked: {
+    type: Boolean,
+    default: false,
+  },
  
 }, {
   timestamps: true,
 });
+
+// Índice para ordenar/listar usuarios por fecha de registro
+userSchema.index({ createdAt: -1 });
  
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();

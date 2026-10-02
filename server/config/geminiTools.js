@@ -128,7 +128,8 @@ const TOOLS_BY_ROLE = {
       updateProductDeclaration,
       deleteProductDeclaration,
       getOrdersDeclaration,
-      getUsersDeclaration
+      getUsersDeclaration,
+      createReportDeclaration   // ← añadir esto
     ]
   }],
   user: [{

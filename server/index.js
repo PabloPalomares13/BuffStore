@@ -22,6 +22,8 @@ const rawgRoutes = require('./routes/rawgRoutes');
 const contactRoutes = require("./routes/contactRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
 const storeFeedbackRoutes = require("./routes/storeFeedbackRoutes");
+const adminRoutes = require('./routes/adminRoutes');
+const usuariosRoutes = require('./routes/usuariosRoutes');
 const path = require('path');
 const cors = require('cors');
 
@@ -108,6 +110,8 @@ app.use('/api/rawg', rawgRoutes);
 app.use("/api", contactRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use('/api/store-feedback', storeFeedbackRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/admin', usuariosRoutes);
 app.get('/', (req, res) => {
   res.json({ 
     message: 'API funcionando',

@@ -20,6 +20,9 @@ import CheckoutFailure from './pages/CheckoutFailure';
 import CheckoutPending from './pages/CheckoutPending';
 import ContactSection from './pages/ContactSection';
 import Productos from './pages/Productos';
+import Usuarios from './pages/Usuarios';
+import Resenas from './pages/Resenas';
+import Reportes from './pages/Reportes';
 
 import MainLayout from './layouts/MainLayout';
 import Home from './pages/Home';
@@ -52,6 +55,7 @@ function App() {
       
     <Route element={<DashboardLayout/>}>
       <Route path="/Dashboard" element={<ProtectedRoute requiredRoles={["admin"]}><Dashboard /></ProtectedRoute>} />
+      <Route path="/Usuarios" element={<ProtectedRoute requiredRoles={["admin"]}><Usuarios /></ProtectedRoute>} />
       <Route path="/NewProduct" element={<ProtectedRoute requiredRoles={["admin"]}><NewProduct /></ProtectedRoute>} />
       <Route path="/Listaproductos" element={<ProtectedRoute requiredRoles={["admin"]}><Listaproductos /></ProtectedRoute>} />
       <Route path="/Modproducto/:id" element={<ProtectedRoute requiredRoles={["admin"]}><Modproducto /></ProtectedRoute>} />
@@ -59,6 +63,8 @@ function App() {
       <Route path="/Listaordenes" element={<ProtectedRoute requiredRoles={["admin"]}><Listaordenes /></ProtectedRoute>} />
       <Route path="/Detallesorden" element={<ProtectedRoute requiredRoles={["admin"]}><Detallesorden /></ProtectedRoute>} />
       <Route path="/Detallesorden/:id" element={<ProtectedRoute requiredRoles={["admin"]}><Detallesorden /></ProtectedRoute>} />
+      <Route path="/Resenas" element={<ProtectedRoute requiredRoles={["admin"]}><Resenas /></ProtectedRoute>} />
+      <Route path="/Reportes" element={<ProtectedRoute requiredRoles={["admin"]}><Reportes /></ProtectedRoute>} />
     </Route>
 
     <Route element={<AuthLayout/>}>

@@ -106,6 +106,8 @@ const orderSchema = new mongoose.Schema({
 orderSchema.index({ paymentStatus: 1 });
 orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ user: 1, createdAt: -1 });
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ paymentStatus: 1, createdAt: -1 });
 
 // Método para marcar como pagada
 orderSchema.methods.markAsPaid = function(paymentId) {
