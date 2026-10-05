@@ -6,7 +6,7 @@ const GameCode = require('../models/GameCode');
 //const User = require('../models/User');
 const { sendOrderCodesEmail } = require('../services/emailService'); // desactivado temporalmente
 const Product = require('../models/Product');
-
+const { ORDER_STATE_BY_MP_STATUS } = require('../config/paymentStatusMap');
 /**
  * Crear preferencia de pago (inicia el proceso de checkout)
  */
@@ -68,6 +68,19 @@ const createPaymentPreference = async (req, res) => {
       _id: { $in: order.products.map(i => i.productId) },
     });
     const byId = new Map(dbProducts.map(p => [p._id.toString(), p]));
+
+    for (const item of order.products) {
+      const p = byId.get(item.productId.toString());
+      if (!p || (p.type && p.type !== 'digital')) continue;
+
+      const available = await GameCode.countDocuments({ product: p._id, status: 'valid' });
+      if (available < item.quantity) {
+        return res.status(409).json({
+          success: false,
+          message: `Ya no hay códigos disponibles de ${p.name}`
+        });
+      }
+    }
 
     let taxesRaw = 0;
     const items = order.products.map(item => {
@@ -173,8 +186,11 @@ const createPaymentPreference = async (req, res) => {
 
     await payment.save();
 
-    // 9. Actualizar orden con referencia al pago
+    // 9. Actualizar orden con referencia al pago (nuevo intento = vuelve a pending)
     order.paymentId = payment._id;
+    order.paymentStatus = 'pending';
+    order.paymentStatusDetail = '';
+    if (order.status !== 'paid') order.status = 'pending';
     await order.save();
 
     // 10. Enviar respuesta con datos para el checkout
@@ -200,31 +216,51 @@ const createPaymentPreference = async (req, res) => {
   }
 };
 const processPaymentResult = async (paymentData) => {
-  console.log('💳 Información del pago:', {
-    id: paymentData.id,
-    status: paymentData.status,
-    status_detail: paymentData.status_detail,
-    external_reference: paymentData.external_reference,
-  });
-
   const orderId = paymentData.external_reference;
-  const payment = await Payment.findOne({ orderId });
+  const mpId = String(paymentData.id);
+  const mpStatus = paymentData.status;
+  const statusDetail = paymentData.status_detail || '';
+  const target = ORDER_STATE_BY_MP_STATUS[mpStatus];
 
+  console.log('💳 Información del pago:', { id: mpId, status: mpStatus, status_detail: statusDetail, external_reference: orderId });
+
+  if (!orderId || !target) {
+    return { ok: false, reason: 'invalid_reference_or_status' };
+  }
+
+  // Último intento de pago de esa orden (puede haber varios por reintentos)
+  const payment = await Payment.findOne({ orderId }).sort({ createdAt: -1 });
   if (!payment) {
     console.error('❌ Pago no encontrado en DB:', orderId);
     return { ok: false, reason: 'payment_not_found' };
   }
 
-  // Idempotencia: si ya estaba aprobado, no repetir la entrega/correo
-  if (payment.status === 'approved' && paymentData.status === 'approved') {
-    console.log('ℹ️ Este pago ya había sido procesado como aprobado, se omite.');
-    return { ok: true, alreadyProcessed: true, status: paymentData.status };
+  // Estados finales: una notificación atrasada no puede pisarlos
+  const ALLOWED_FROM = {
+    approved: ['approved', 'refunded', 'charged_back'],
+    refunded: ['refunded'],
+    charged_back: ['charged_back'],
+  };
+  const allowed = ALLOWED_FROM[payment.status];
+  if (allowed && !allowed.includes(mpStatus)) {
+    console.log(`ℹ️ Se ignora "${mpStatus}": el pago ya está en "${payment.status}"`);
+    return { ok: true, ignored: true, status: payment.status, statusDetail: payment.statusDetail, paymentStatus: ORDER_STATE_BY_MP_STATUS[payment.status]?.paymentStatus };
+  }
+  if (payment.status === 'approved' && mpStatus === 'approved' && payment.mercadoPagoId && payment.mercadoPagoId !== mpId) {
+    console.warn(`⚠️ Posible doble cobro en la orden ${orderId}: ya aprobado con ${payment.mercadoPagoId}, llegó ${mpId}`);
+    return { ok: true, ignored: true, status: payment.status, paymentStatus: 'paid' };
   }
 
-  payment.mercadoPagoId = paymentData.id.toString();
-  payment.status = paymentData.status;
-  payment.statusDetail = paymentData.status_detail;
+  // El monto cobrado debe coincidir con el de la orden
+  if (mpStatus === 'approved' && Math.round(paymentData.transaction_amount) !== Math.round(payment.amount)) {
+    console.error(`❌ Monto no coincide en orden ${orderId}: MP=${paymentData.transaction_amount} DB=${payment.amount}`);
+    return { ok: false, reason: 'amount_mismatch' };
+  }
 
+  // 1) Sincronizar Payment
+  payment.mercadoPagoId = mpId;
+  payment.status = mpStatus;
+  payment.statusDetail = statusDetail;
   if (paymentData.payment_method_id) {
     payment.paymentMethod = {
       type: paymentData.payment_type_id,
@@ -233,30 +269,50 @@ const processPaymentResult = async (paymentData) => {
       cardholder_name: paymentData.card?.cardholder?.name,
     };
   }
-
   payment.rawResponse = paymentData;
+  if (mpStatus === 'approved') payment.approvedAt = payment.approvedAt || new Date();
+  if (mpStatus === 'refunded') payment.refundedAt = new Date();
+  await payment.save();
 
-  if (paymentData.status === 'approved') {
-    payment.approvedAt = new Date();
-    await payment.save();
+  // 2) Sincronizar Order
+  const set = { ...target, paymentId: payment._id, paymentStatusDetail: statusDetail };
+    const last4 = paymentData.card?.last_four_digits;
+    if (/^\d{4}$/.test(last4 || '')) {
+      set['payment.cardLast4'] = last4;
+      set['payment.cardName'] = paymentData.card.cardholder?.name || '';
+    }
+  if (paymentData.payment_method_id) {
+  set['payment.method'] = paymentData.payment_method_id;
+}
 
-    const order = await Order.findById(orderId).populate('products.productId');
+  if (mpStatus === 'approved') {
+    // Reclamo atómico: solo UN proceso (webhook o /verify) pasa de no-pagada a pagada
+    const claimed = await Order.findOneAndUpdate(
+      { _id: orderId, paymentStatus: { $ne: 'paid' } },
+      { $set: { ...set, paidAt: new Date() } },
+      { new: true }
+    ).populate('products.productId');
 
-    // Si la orden ya estaba pagada (ej: el webhook la marcó justo antes
-    // de que el frontend llame al fallback), no la procesamos dos veces
-    if (order.paymentStatus !== 'paid') {
-      await order.markAsPaid(payment._id);
-      await deliverDigitalProducts(order);
-      console.log('✅ Pago aprobado y productos entregados');
+    if (claimed) {
+      try {
+        await deliverDigitalProducts(claimed);
+        console.log('✅ Pago aprobado y productos entregados');
+      } catch (err) {
+        console.error('❌ Falló la entrega de códigos:', err.message);
+        await Order.updateOne({ _id: orderId }, { $set: { deliveryIssue: `Error entregando códigos: ${err.message}` } });
+      }
     } else {
-      console.log('ℹ️ La orden ya estaba marcada como pagada, se omite entrega duplicada.');
+      console.log('ℹ️ La orden ya estaba pagada, se omite entrega duplicada.');
     }
   } else {
-    await payment.save();
-    console.log('⏳ Pago en estado:', paymentData.status);
+    // Reembolsos sí pueden modificar una orden pagada; el resto no
+    const isReversal = ['refunded', 'charged_back'].includes(mpStatus);
+    const filter = isReversal ? { _id: orderId } : { _id: orderId, paymentStatus: { $ne: 'paid' } };
+    await Order.updateOne(filter, { $set: set });
+    console.log(`⏳ Pago en estado "${mpStatus}" -> orden paymentStatus "${target.paymentStatus}"`);
   }
 
-  return { ok: true, status: paymentData.status };
+  return { ok: true, status: mpStatus, statusDetail, paymentStatus: target.paymentStatus };
 };
 
 const handleWebhook = async (req, res) => {
@@ -381,9 +437,23 @@ const verifyAndProcessPayment = async (req, res) => {
     const paymentClient = new mercadopago.Payment(client);
     const paymentData = await paymentClient.get({ id: paymentId });
 
+    // El pago debe pertenecer a una orden del usuario autenticado
+    const ownerId = String(req.user.id || req.user._id);
+    const ownerOrder = await Order.findById(paymentData.external_reference).select('user');
+    if (!ownerOrder || ownerOrder.user.toString() !== ownerId) {
+      return res.status(403).json({ success: false, message: 'Este pago no pertenece a tu cuenta' });
+    }
+
     const result = await processPaymentResult(paymentData);
 
-    res.json({ success: result.ok, status: result.status, reason: result.reason });
+    res.json({
+      success: result.ok,
+      status: result.status,                 // estado MP: approved / rejected...
+      paymentStatus: result.paymentStatus,   // estado de la orden: paid / failed / pending
+      statusDetail: result.statusDetail,
+      message: result.statusDetail ? getStatusDetailMessage(result.statusDetail) : null,
+      reason: result.reason,
+    });
   } catch (error) {
     console.error('❌ Error verificando pago manualmente:', error);
     res.status(500).json({ success: false, message: error.message });

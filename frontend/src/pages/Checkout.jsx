@@ -18,25 +18,13 @@ const Checkout = () => {
   const [alert, setAlert] = useState({ show: false, type: '', message: '' });
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  //const [searchParams] = useSearchParams();
   // Estados para formulario
   const [formData, setFormData] = useState({
     // Datos personales
     fullName: '',
     email: '',
     phone: '',
-
-    // Dirección de envío
-    address: '',
-    city: '',
-    state: '',
-    zipCode: '',
-
-    // Datos de pago
-    cardName: '',
-    cardNumber: '',
-    expiryDate: '',
-    cvc: ''
   });
 
   // Cargar datos del carrito desde localStorage
@@ -52,30 +40,22 @@ const Checkout = () => {
             try {
               // Obtener información actualizada del producto (stock, precio, etc.)
               const response = await axios.get(`${link}/api/products/${item._id}`);
-              
-              // Determinar la URL de la imagen según el formato
-              let displayImageUrl = null;
-              
-              if (response.data.images && Array.isArray(response.data.images) && response.data.images.length > 0) {
-                if (typeof response.data.images[0] === 'string') {
-                  // Nuevo formato: URL directa de Google Cloud Storage
-                  displayImageUrl = response.data.images[0];
-                  console.log('Cart item using GCS URL:', displayImageUrl);
-                } else if (response.data.images[0] && response.data.images[0].data) {
-                  // Formato antiguo: imagen binaria en MongoDB
-                  displayImageUrl = `${link}/api/products/image/${response.data._id}/0`;
-                  console.log('Cart item using binary format URL:', displayImageUrl);
-                }
-              }
-              
+              const product = response.data;
+
+              // Prioridad: poster > primera imagen de la galería > placeholder
+              const displayImageUrl =
+                product.media?.find(m => m.isPoster)?.url ||
+                product.media?.find(m => m.type === 'image')?.url ||
+                '/path/to/placeholder.jpg';
+
               return {
-                _id: response.data._id,
-                name: response.data.name,
-                price: response.data.price,
-                stock: response.data.stock,
-                taxRate: response.data.taxRate,
+                _id: product._id,
+                name: product.name,
+                price: product.price,
+                stock: product.stock,
+                taxRate: product.taxRate,
                 quantity: item.quantity || 1,
-                displayImageUrl // URL actualizada según el formato
+                displayImageUrl
               };
             } catch (err) {
               console.error(`Error al obtener detalles del producto ${item._id}:`, err);
@@ -104,11 +84,56 @@ const Checkout = () => {
   loadCartData();
 }, []); 
 
+useEffect(() => {
+  const loadUserEmail = async () => {
+    try {
+      const token = localStorage.getItem('userToken');
+      const { data } = await axios.get(`${link}/api/auth/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setFormData(prev => ({ ...prev, email: data.email }));
+    } catch (err) {
+      console.error('Error al cargar el email del usuario:', err);
+    }
+  };
+  loadUserEmail();
+}, []);
+
+useEffect(() => {
+  const loadUserFullName = async () => {
+    try {
+      const token = localStorage.getItem('userToken');
+      const { data } = await axios.get(`${link}/api/auth/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setFormData(prev => ({ ...prev, fullName: data.fullName }));
+    } catch (err) {
+      console.error('Error al cargar el nombre del usuario:', err);
+    }
+  };
+  loadUserFullName();
+}, []);
+
+useEffect(() => {
+  const loadUserPhone = async () => {
+    try {
+      const token = localStorage.getItem('userToken');
+      const { data } = await axios.get(`${link}/api/auth/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setFormData(prev => ({ ...prev, phone: data.phone }));
+    } catch (err) {
+      console.error('Error al cargar el numero del usuario:', err);
+    }
+  };
+  loadUserPhone();
+}, []);
+
   // Calcular totales cuando cambia el carrito
   useEffect(() => {
     const newSubtotal = cart.reduce((acc, item) => acc + (item.price * item.quantity), 0);
     const newTaxes = cart.reduce((acc, item) => {
-      const taxRate = (item.taxRate * 0.01) || 0.08; // 8% por defecto si no hay taxRate
+      const taxRate = (item.taxRate ?? 8) / 100; // 8% por defecto si no hay taxRate
       return acc + (item.price * item.quantity * taxRate);
     }, 0);
 
@@ -117,74 +142,53 @@ const Checkout = () => {
     setTotal(newSubtotal + newTaxes);
   }, [cart]);
 
-  useEffect(() => {
-  // Verificar si viene de una redirección de Mercado Pago
-  const paymentStatus = searchParams.get('status');
-  const paymentId = searchParams.get('payment_id');
-  const orderId = searchParams.get('external_reference');
+//   useEffect(() => {
+//   // Verificar si viene de una redirección de Mercado Pago
+//   const paymentStatus = searchParams.get('status');
+//   const paymentId = searchParams.get('payment_id');
+//   const orderId = searchParams.get('external_reference');
 
-  if (paymentStatus && paymentId) {
-    handlePaymentReturn(paymentStatus, paymentId, orderId);
-  }
-}, [searchParams]);
+//   if (paymentStatus && paymentId) {
+//     handlePaymentReturn(paymentStatus, paymentId, orderId);
+//   }
+// }, [searchParams]);
 
-// ⬇️ AGREGAR ESTA FUNCIÓN
-const handlePaymentReturn = async (status, paymentId, orderId) => {
-  if (status === 'approved') {
-    localStorage.removeItem('cart');
-    setAlert({
-      show: true,
-      type: 'success',
-      message: '✅ ¡Pago aprobado! Tus productos digitales están disponibles.'
-    });
-    setStep(3);
+// // ⬇️ AGREGAR ESTA FUNCIÓN
+// const handlePaymentReturn = async (status, paymentId, orderId) => {
+//   if (status === 'approved') {
+//     localStorage.removeItem('cart');
+//     setAlert({
+//       show: true,
+//       type: 'success',
+//       message: '✅ ¡Pago aprobado! Tus productos digitales están disponibles.'
+//     });
+//     setStep(3);
     
-    setTimeout(() => {
-      navigate('/Userprofile');
-    }, 3000);
+//     setTimeout(() => {
+//       navigate('/Userprofile');
+//     }, 3000);
     
-  } else if (status === 'pending') {
-    setAlert({
-      show: true,
-      type: 'warning',
-      message: '⏳ Tu pago está pendiente de confirmación.'
-    });
+//   } else if (status === 'pending') {
+//     setAlert({
+//       show: true,
+//       type: 'warning',
+//       message: '⏳ Tu pago está pendiente de confirmación.'
+//     });
     
-  } else {
-    setAlert({
-      show: true,
-      type: 'error',
-      message: '❌ El pago fue rechazado. Intenta con otro método.'
-    });
-    setStep(2);
-  }
-};
+//   } else {
+//     setAlert({
+//       show: true,
+//       type: 'error',
+//       message: '❌ El pago fue rechazado. Intenta con otro método.'
+//     });
+//     setStep(2);
+//   }
+// };
 
   // Manejar cambios en el formulario (sin cambios aquí)
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     let formattedValue = value;
-
-    // Formato tarjeta (agrupación cada 4 dígitos)
-    if (name === 'cardNumber') {
-      const cleanValue = value.replace(/\D/g, '').slice(0, 16);
-      formattedValue = cleanValue.match(/.{1,4}/g)?.join(' ') || '';
-    }
-
-    // Formato fecha (MM/YY) sin restricción de mes
-    if (name === 'expiryDate') {
-      const cleanValue = value.replace(/\D/g, '').slice(0, 4);
-      if (cleanValue.length < 3) {
-        formattedValue = cleanValue;
-      } else {
-        formattedValue = `${cleanValue.slice(0, 2)}/${cleanValue.slice(2)}`    ;
-      }
-    }
-
-    // Formato CVC (máximo 3 números)
-    if (name === 'cvc') {
-      formattedValue = value.replace(/\D/g, '').slice(0, 3);
-    }
 
     setFormData((prev) => ({
       ...prev,
@@ -242,18 +246,12 @@ const handlePaymentReturn = async (status, paymentId, orderId) => {
         name: item.name,
         price: item.price,
         quantity: item.quantity,
-        taxRate: item.taxRate || 0.08
+        taxRate: item.taxRate ?? 8
       })),
       customer: {
         fullName: formData.fullName,
         email: formData.email,
         phone: formData.phone
-      },
-      shipping: {
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        zipCode: formData.zipCode
       },
       totals: {
         subtotal,
@@ -297,31 +295,6 @@ const handlePaymentReturn = async (status, paymentId, orderId) => {
   } finally {
     setLoading(false);
   }
-};
-
-const handlePaymentSuccess = (payment) => {
-  console.log('Pago exitoso:', payment);
-  localStorage.removeItem('cart');
-  setStep(3);
-  
-  setAlert({
-    show: true,
-    type: 'success',
-    message: '✅ ¡Pago completado exitosamente!'
-  });
-  
-  setTimeout(() => {
-    navigate('/Userprofile');
-  }, 3000);
-};
-
-const handlePaymentError = (error) => {
-  console.error('Error en el pago:', error);
-  setAlert({
-    show: true,
-    type: 'error',
-    message: 'Hubo un error al procesar tu pago. Por favor intenta de nuevo.'
-  });
 };
 
 
@@ -481,6 +454,7 @@ const handlePaymentError = (error) => {
                         text-white font-Urbanist placeholder-white/40 outline-none transition-colors
                         focus:border-[#00FF37]/60 focus:shadow-[0_0_12px_rgba(0,255,55,0.4)]"
                     />
+                    <div className="relative w-full">
                     <input
                       type="email"
                       name="email"
@@ -488,10 +462,33 @@ const handlePaymentError = (error) => {
                       value={formData.email}
                       onChange={handleInputChange}
                       required
-                      className="w-full px-4 py-2 rounded-full border border-white/20 bg-white/5 backdrop-blur-xl
+                      disabled
+                      className="w-full pl-4 pr-11 py-2 rounded-full border border-white/20 bg-white/5 backdrop-blur-xl
                         text-white font-Urbanist placeholder-white/40 outline-none transition-colors
-                        focus:border-[#00FF37]/60 focus:shadow-[0_0_12px_rgba(0,255,55,0.4)]"
+                        focus:border-[#00FF37]/60 focus:shadow-[0_0_12px_rgba(0,255,55,0.4)] disabled:opacity-50 "
                     />
+
+                      {/* Contenedor del icono y el tooltip */}
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center justify-center group cursor-help">
+                        
+                        {/* Ícono de información (círculo pequeño) */}
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          fill="none" 
+                          viewBox="0 0 24 24" 
+                          strokeWidth={1.5} 
+                          stroke="currentColor" 
+                          className="w-5 h-5 text-white/50 group-hover:text-white transition-colors duration-300"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                        </svg>
+
+                        {/* Mensaje emergente (Tooltip) adaptado al modo oscuro */}
+                        <div className="absolute bottom-full right-0 mb-2 w-48 px-3 py-2 text-xs font-Urbanist text-white bg-black/80 backdrop-blur-md rounded-lg border border-white/10 opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-300 shadow-xl z-10 translate-y-2 group-hover:translate-y-0">
+                          El correo solo se puede cambiar desde tu perfil de usuario
+                        </div>
+                      </div>
+                    </div>
                     <input
                       type="tel"
                       name="phone"
@@ -535,8 +532,6 @@ const handlePaymentError = (error) => {
                 {/* Componente de Mercado Pago */}
                 <MercadoPagoCheckout
                   orderId={order._id}
-                  onSuccess={handlePaymentSuccess}
-                  onError={handlePaymentError}
                 />
  
                 <button

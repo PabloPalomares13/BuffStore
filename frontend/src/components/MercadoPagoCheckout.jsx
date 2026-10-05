@@ -5,7 +5,7 @@ const link = import.meta.env.PROD
   ? `${import.meta.env.VITE_BACKEND_URL}/api`
   : 'http://localhost:3000/api';
 
-const MercadoPagoCheckout = ({ orderId, onSuccess, onError }) => {
+const MercadoPagoCheckout = ({ orderId }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 

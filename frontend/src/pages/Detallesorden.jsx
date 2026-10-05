@@ -3,11 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Download, Mail, Phone,AlertCircle } from 'lucide-react';
 import { PDFDownloadLink, Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import logobuff from '../assets/BLogo4K.png';
-
+import visa from '../assets/visa.svg';
+import mc from '../assets/mc.svg';
 const link = import.meta.env.PROD 
   ? import.meta.env.VITE_BACKEND_URL
   : 'http://localhost:3000'
 
+const authHeaders = () => ({
+  Authorization: `Bearer ${localStorage.getItem('userToken')}`,
+});
 const styles = StyleSheet.create({
   page: {
     flexDirection: 'column',
@@ -358,6 +362,45 @@ const OrderPDF = ({ order }) => {
 );
 };
 
+const PAYMENT_BADGE = {
+  paid:     { label: 'Pagada',      cls: 'bg-[#00FF37]/10 text-[#00FF37] border-[#00FF37]/30' },
+  pending:  { label: 'Pendiente',   cls: 'bg-yellow-400/10 text-yellow-400 border-yellow-400/30' },
+  failed:   { label: 'Rechazada',   cls: 'bg-[#FF137A]/10 text-[#FF137A] border-[#FF137A]/30' },
+  refunded: { label: 'Reembolsada', cls: 'bg-white/10 text-white/60 border-white/20' },
+};
+
+const STATUS_DETAIL_TEXT = {
+  cc_rejected_insufficient_amount: 'Fondos insuficientes',
+  cc_rejected_bad_filled_security_code: 'CVV incorrecto',
+  cc_rejected_bad_filled_date: 'Fecha de vencimiento incorrecta',
+  cc_rejected_bad_filled_card_number: 'Número de tarjeta incorrecto',
+  cc_rejected_bad_filled_other: 'Datos de tarjeta incorrectos',
+  cc_rejected_call_for_authorize: 'Requiere autorización del banco',
+  cc_rejected_card_disabled: 'Tarjeta inhabilitada',
+  cc_rejected_duplicated_payment: 'Pago duplicado',
+  cc_rejected_high_risk: 'Rechazado por prevención de fraude',
+  cc_rejected_max_attempts: 'Límite de intentos superado',
+  cc_rejected_other_reason: 'Rechazado por el banco',
+};
+
+const PAYMENT_METHOD_LABEL = {
+  visa: 'Visa',
+  debvisa: 'Visa Débito',
+  master: 'Mastercard',
+  debmaster: 'Mastercard Débito',
+  amex: 'American Express',
+  diners: 'Diners',
+  codensa: 'Crédito Fácil Codensa',
+  pse: 'PSE',
+  efecty: 'Efecty',
+};
+const METHOD_LOGO = {
+  visa,
+  debvisa: visa,
+  master: mc,
+  debmaster: mc,
+  mastercard: mc,
+};
 
 const Detallesorden = () => {
   const { id } = useParams();
@@ -376,10 +419,14 @@ const Detallesorden = () => {
   // Función para obtener los datos de la orden específica
   const fetchOrderDetails = async () => {
   try {
-    const response = await fetch(`${link}/api/orders/${id}`);
-    
+    const response = await fetch(`${link}/api/orders/${id}`, { headers: authHeaders() });
+
     if (!response.ok) {
-      throw new Error("Error al obtener la información de la orden");
+      throw new Error(
+        response.status === 401 || response.status === 403
+          ? 'No tienes permiso para ver esta orden'
+          : 'Error al obtener la información de la orden'
+      );
     }
     
     const data = await response.json();
@@ -448,21 +495,45 @@ const Detallesorden = () => {
  
 
   // Status badge renderer
-  const renderStatusBadge = (status) => {
-    const statusClasses = {
-      'paid': 'bg-green-100 text-green-800',
-      'pending': 'bg-yellow-100 text-yellow-800',
-      'shipped': 'bg-blue-100 text-blue-800',
-      'delivered': 'bg-purple-100 text-purple-800',
-      'cancelled': 'bg-red-100 text-red-800'
-    };
-
-    return (
-      <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusClasses[status] || 'bg-gray-100 text-gray-800'}`}>
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+  const renderPaymentStatus = (order) => {
+  const badge = PAYMENT_BADGE[order.paymentStatus] || PAYMENT_BADGE.pending;
+  return (
+    <div>
+      <span className={`px-3 py-1 rounded-full text-xs font-Urbanist font-semibold border ${badge.cls}`}>
+        {badge.label}
       </span>
-    );
-  };
+      {order.paymentStatus === 'failed' && order.paymentStatusDetail && (
+        <p className="text-xs text-white/40 font-Urbanist mt-1">
+          {STATUS_DETAIL_TEXT[order.paymentStatusDetail] || order.paymentStatusDetail}
+        </p>
+      )}
+    </div>
+  );
+};
+
+  const renderCard = (order) => {
+  const method = order.payment?.method;
+  if (!method) return '—';
+
+  const key = String(method).toLowerCase();
+  const label = PAYMENT_METHOD_LABEL[key] || method;
+  const logo = METHOD_LOGO[key];
+  const last4 = order.payment?.cardLast4;
+
+  return (
+    <div className="flex items-center gap-0">
+      {logo && (
+        <img src={logo} alt={label} className="h-10 w-16 object-contain shrink-0" />
+      )}
+      <div>
+        <div className="text-white">{label}</div>
+        {/^\d{4}$/.test(last4 || '') && (
+          <div className="text-xs">•••• {last4}</div>
+        )}
+      </div>
+    </div>
+  );
+};
 
   // Formatear fecha
   const formatDate = (dateString) => {
@@ -524,7 +595,7 @@ const Detallesorden = () => {
               <h1 className="font-haze uppercase text-2xl tracking-wide text-white">
                 Orden <h2 style={{ fontFamily: '"Urbanist", sans-serif' }} className="text-xl uppercase text-white break-all">#{order._id}</h2> 
               </h1>
-              {renderStatusBadge(order.status)}
+              {renderPaymentStatus(order)}
             </div>
             <p className="text-sm font-Urbanist text-white/60 mt-1">{formatDate(order.createdAt)}</p>
           </div>
@@ -569,18 +640,10 @@ const Detallesorden = () => {
           </div>
  
           <div className="bg-black/40 backdrop-blur-md rounded-[20px] border border-white/20 p-6 mt-4">
-            <h2 className="text-lg font-semibold text-white mb-4">Dirección de Facturación</h2>
-            <address className="not-italic font-Urbanist text-white/60 text-sm">
-              {order.shipping?.address}<br />
-              {order.shipping?.city}, {order.shipping?.state} <br />{order.shipping?.zipCode}
-            </address>
-          </div>
- 
-          <div className="bg-black/40 backdrop-blur-md rounded-[20px] border border-white/20 p-6 mt-4">
             <h2 className="text-lg font-semibold text-white mb-4">Información de Pago</h2>
             <div className="font-Urbanist text-white/60 text-sm space-y-1">
-              <p>Nombre en tarjeta: {order.payment?.cardName}</p>
-              <p>Últimos 4 dígitos: **** **** **** {order.payment?.cardLast4}</p>
+              <p>Nombre en tarjeta: {renderCard(order)}</p>
+              <p>Últimos 4 dígitos: **** **** ****{renderCard(order.payment?.cardLast4)}</p>
             </div>
           </div>
         </div>
@@ -607,8 +670,9 @@ const Detallesorden = () => {
                           <div className="h-16 w-16 bg-white/10 border border-white/20 rounded-full flex items-center justify-center overflow-hidden mr-4">
                             <img
                               src={
-                                item.productDetails?.images?.[0] ||
-                                `${link}/api/products/image/${item.productId}/0`
+                                item.productDetails?.media?.find(m => m.isPoster)?.url ||
+                                item.productDetails?.media?.find(m => m.type === 'image')?.url ||
+                                '/path/to/placeholder.jpg'
                               }
                               alt={item.name}
                               className="w-full h-full object-cover"

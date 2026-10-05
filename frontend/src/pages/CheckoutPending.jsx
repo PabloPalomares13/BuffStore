@@ -4,7 +4,7 @@ import axios from 'axios';
 
 const link = import.meta.env.PROD
   ? import.meta.env.VITE_BACKEND_URL
-  : 'http://localhost:3000/api';
+  : 'http://localhost:3000';
 
 const CheckoutPending = () => {
   const navigate = useNavigate();
@@ -22,11 +22,14 @@ const CheckoutPending = () => {
       try {
         const token = localStorage.getItem('userToken');
         const response = await axios.post(
-          `${link}/payments/verify/${paymentId}`,
+          `${link}/api/payments/verify/${paymentId}`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
         console.info('Resultado del pago pendiente:', response.data);
+        if (response.data.status === 'approved') {
+          navigate(`/checkout/success?payment_id=${paymentId}`);
+        }
       } catch (error) {
         console.error('No se pudo consultar el pago pendiente:', error.response?.data || error.message);
       }

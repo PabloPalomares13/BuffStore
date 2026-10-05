@@ -436,6 +436,8 @@ export default function Productos({
   onProductClick,
   onAddToCart,
 }) {
+    const [showCartModal, setShowCartModal] = useState(false);
+  const [addedProduct, setAddedProduct] = useState(null);
   const navigate = useNavigate();
  
   // Por defecto navega al detalle del producto — igual que las cards
@@ -455,8 +457,16 @@ export default function Productos({
         currentCart.push({ _id: product._id, name: product.name, price: product.price, quantity: 1 });
       }
       localStorage.setItem('cart', JSON.stringify(currentCart));
+      setAddedProduct(product);
+      setShowCartModal(true);
     });
- 
+  const handleContinueShopping = () => {
+        setShowCartModal(false); 
+        setAddedProduct(null); 
+      };
+      const handleGoToCheckout = () => {
+        window.location.href = '/checkout';
+      };
   const [fetchedProducts, setFetchedProducts] = useState([]);
   const [loading, setLoading] = useState(productsProp === undefined);
   const [error, setError] = useState(null);
@@ -777,6 +787,48 @@ export default function Productos({
           </div>
         </div>
       </div>
+      {showCartModal && addedProduct && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-white/10 backdrop-blur-sm px-4"
+          onClick={handleContinueShopping}
+        >
+          <div
+            className="relative w-full max-w-sm overflow-hidden rounded-[20px] border border-white/20 bg-black/50 backdrop-blur-xl p-8 text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="pointer-events-none absolute -left-16 -top-16 h-40 w-40 rounded-full bg-[#00FF37] opacity-30 blur-[80px]" />
+            <div className="pointer-events-none absolute -right-16 -bottom-16 h-40 w-40 rounded-full bg-[#FF137A] opacity-30 blur-[80px]" />
+
+            <div className="relative z-10">
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full border border-[#00FF37]/40 bg-[#00FF37]/10 shadow-[0_0_20px_rgba(0,255,55,0.4)]">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-[#00FF37]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+
+              <h3 className="font-haze text-2xl text-white">Agregado al carrito</h3>
+              <p className="mt-2 font-Urbanist text-sm text-white/70">
+                {addedProduct.name} se sumó a tu carrito correctamente.
+              </p>
+
+              <div className="mt-7 flex flex-col gap-3">
+                <button
+                  onClick={handleGoToCheckout}
+                  className="rounded-full border border-[#FF137A]/50 bg-[#FF137A]/10 px-6 py-3 font-haze text-sm text-white shadow-[0_0_15px_rgba(255,19,122,0.35)] transition-colors hover:bg-[#FF137A]/20 hover:scale-105"
+                >
+                  PAGAR AHORA
+                </button>
+                <button
+                  onClick={handleContinueShopping}
+                  className="rounded-full border border-white/20 bg-white/10 px-6 py-3 font-Urbanist text-sm text-white/80 backdrop-blur-md transition-colors hover:bg-white/20 hover:scale-105"
+                >
+                  Seguir comprando
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

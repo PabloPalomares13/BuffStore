@@ -1,14 +1,15 @@
-import { useEffect } from 'react';
+import { useEffect,useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 
 const link = import.meta.env.PROD
   ? import.meta.env.VITE_BACKEND_URL
-  : 'http://localhost:3000/api';
+  : 'http://localhost:3000';
 
 const CheckoutFailure = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const [reason, setReason] = useState(null);
 
   const paymentId = searchParams.get('payment_id');
 
@@ -22,11 +23,12 @@ const CheckoutFailure = () => {
       try {
         const token = localStorage.getItem('userToken');
         const response = await axios.post(
-          `${link}/payments/verify/${paymentId}`,
+          `${link}/api/payments/verify/${paymentId}`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
         console.info('Resultado del pago rechazado:', response.data);
+        setReason(response.data.message);
       } catch (error) {
         console.error('No se pudo consultar el pago rechazado:', error.response?.data || error.message);
       }
@@ -80,7 +82,11 @@ const CheckoutFailure = () => {
           {/* Razones posibles */}
           <div className="bg-black/50 backdrop-blur-md border border-white/20 rounded-[20px] p-4 mb-6 text-left">
             <p className="font-Urbanist text-sm font-semibold text-white/80 mb-2">
-              Posibles razones:
+              Razon del rechazo:
+            </p>
+            {reason && <p>Motivo: {reason}</p>}
+            <p className="font-Urbanist text-sm font-semibold text-white/80 mb-2">
+              Otras Posibles razones:
             </p>
             <ul className="font-Urbanist text-sm text-white/50 space-y-1">
               <li>• Fondos insuficientes</li>

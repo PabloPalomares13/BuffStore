@@ -92,7 +92,7 @@ const Register = () => {
     }
   };
 
-  return (
+return (
   <div className="relative flex flex-col lg:flex-row min-h-screen bg-gradient-to-r from-[#FF137A] to-[#000000] overflow-hidden"
      style={{ fontFamily: '"Urbanist", sans-serif' }}>
   
@@ -109,7 +109,7 @@ const Register = () => {
             alert.type === 'success' ? 'bg-[#00FF37]' : 'bg-[#FF137A]'
           }`}
         />
-
+ 
         <div className="flex items-start gap-3 p-4">
           {/* Insignia con halo */}
           <div className="relative shrink-0">
@@ -136,11 +136,11 @@ const Register = () => {
               )}
             </div>
           </div>
-
+ 
           {/* Texto */}
           <div className="flex-1 pt-0.5">
             <p className="font-haze text-sm text-white leading-none mb-1">
-              {alert.type === 'success' ? 'Listo' : 'Algo salio mal'}
+              {alert.type === 'success' ? 'Listo' : 'Algo salió mal'}
             </p>
             <p className="text-sm text-white/60 leading-snug">{alert.message}</p>
             {alert.detail && (
@@ -148,7 +148,7 @@ const Register = () => {
             )}
           </div>
         </div>
-
+ 
         {/* Barra de progreso (auto-dismiss) */}
         <div className="h-[2px] w-full bg-white/10">
           <div
@@ -160,17 +160,17 @@ const Register = () => {
         </div>
       </div>
     )}
-
+ 
     <div className="lg:hidden w-full px-6 pt-8 text-white text-center">
       <a href="/home" className="inline-block">
         <img src={logo} alt="logo" className="w-28 mx-auto rounded-[20px] py-1 mb-4 bg-white/10 backdrop-blur-md border border-white/20 shadow-xl" />
       </a>
-      <h2 className="font-haze text-3xl mb-2 leading-tight">Hey! Hola Parcero!</h2>
+      <h2 className="font-haze text-3xl mb-2 leading-tight">Hey! Hola, parcero!</h2>
       <p className="font-Urbanist text-base text-white/70 max-w-sm mx-auto">
-        Unete a la tienda de claves de video juegos y microtransacciones mas grande de Latam!
+        ¡Únete a la tienda de claves de videojuegos y microtransacciones más grande de Latam!
       </p>
     </div>
-
+ 
     {/* Panel izquierdo — solo pantallas grandes */}
     <div className="hidden lg:flex lg:w-1/2 flex-col justify-center px-16 text-white relative">
       <img
@@ -181,31 +181,31 @@ const Register = () => {
       <a href="/home" className="relative z-10">
         <img src={logo} alt="logo" className="w-40 rounded-[20px] py-1 mb-8 bg-white/10 backdrop-blur-md border border-white/20 shadow-xl" />
       </a>
-      <h2 className="relative z-10 font-haze text-5xl mb-6 leading-tight">Hey! Hola Parcero!</h2>
+      <h2 className="relative z-10 font-haze text-5xl mb-6 leading-tight">Hey! Hola parcero!</h2>
       <p className="relative z-10 font-Urbanist text-2xl max-w-md">
-        Unete a la tienda de claves de video juegos y microtransacciones mas grande de Latam!
+        ¡Únete a la tienda de claves de videojuegos y microtransacciones más grande de Latam!
       </p>
       <p className="hidden lg:block relative z-10 font-Urbanist text-lg text-white/70 max-w-md">
-        Te damos las mejores ofertas y las mas exclusivas para ti.
-        Unete a nuestra comunidad de gamers y disfruta de la mejor experiencia de compra.
+        Te damos las mejores ofertas y las más exclusivas para ti.
+        Únete a nuestra comunidad de gamers y disfruta de la mejor experiencia de compra.
       </p>
     </div>
-
+ 
     <div className="w-full lg:w-1/2 flex items-center justify-center p-6 relative z-10">
       <div className="bg-black/40 backdrop-blur-xl border border-white/20 rounded-[28px] shadow-2xl p-8 w-full max-w-md">
         <h2 className="font-haze-defog text-3xl text-white text-center mb-2 tracking-wider">Crear una cuenta</h2>
         <p className="font-Urbanist text-white/60 text-center mb-8">
-          Que alegria tener un nuevo usuario!!
+          ¡Qué alegría tener un nuevo usuario!
         </p>
-
+ 
         <form onSubmit={handleSubmit} className="space-y-5 font-Urbanist">
           <div>
-            <label htmlFor="email" className="block text-md text-white mb-1">Correo Electronico</label>
+            <label htmlFor="email" className="block text-md text-white mb-1">Correo electrónico</label>
             <input
               type="email"
               id="email"
               name="email"
-              placeholder="Correo electronico"
+              placeholder="Correo electrónico"
               value={formData.email}
               onChange={handleChange}
               className={`w-full px-4 py-3 rounded-full border bg-white/5 text-white placeholder-white/60 outline-none transition-colors ${
@@ -216,7 +216,7 @@ const Register = () => {
               <p className="text-[#FF137A] text-sm mt-1">{errors.email}</p>
             )}
           </div>
-
+ 
           <div>
             <label htmlFor="password" className="block text-md text-white mb-1">Contraseña</label>
             <input
@@ -234,9 +234,9 @@ const Register = () => {
               <p className="text-[#FF137A] text-sm mt-1">{errors.password}</p>
             )}
           </div>
-
+ 
           <div>
-            <label htmlFor="confirmPassword" className="block text-md text-white mb-1">Confirmar Contraseña</label>
+            <label htmlFor="confirmPassword" className="block text-md text-white mb-1">Confirmar contraseña</label>
             <input
               type="password"
               id="confirmPassword"
@@ -252,7 +252,7 @@ const Register = () => {
               <p className="text-[#FF137A] text-sm mt-1">{errors.confirmPassword}</p>
             )}
           </div>
-
+ 
           <button
             type="submit"
             disabled={!isFormValid}
@@ -262,13 +262,13 @@ const Register = () => {
                 : 'bg-white/10 text-white/40 cursor-not-allowed'
             }`}
           >
-            Crear Cuenta
+            Crear cuenta
           </button>
-
+ 
           <p className="text-center text-white/60">
-            Ya tienes una cuenta?{' '}
+            ¿Ya tienes una cuenta?{' '}
             <Link to="/login" className="text-[#00FF37] font-medium hover:underline">
-              Iniciar Sesion
+              Iniciar sesión
             </Link>
           </p>
         </form>

@@ -4,7 +4,7 @@ import axios from 'axios';
  
 const link = import.meta.env.PROD
   ? import.meta.env.VITE_BACKEND_URL
-  : 'http://localhost:3000/api';
+  : 'http://localhost:3000';
  
 const CheckoutSuccess = () => {
   const navigate = useNavigate();
@@ -14,48 +14,42 @@ const CheckoutSuccess = () => {
   const paymentId = searchParams.get('payment_id');
   const externalReference = searchParams.get('external_reference');
  
-  useEffect(() => {
-    // Limpiar carrito
-    localStorage.removeItem('cart');
- 
-    // Fallback: en sandbox el webhook de merchant_order suele estar
-    // bloqueado por Mercado Pago, así que verificamos el pago manualmente
-    // usando el payment_id que MP puso en la URL de retorno. Si el
-    // webhook ya lo procesó, este endpoint es idempotente y no hace nada raro.
-    const verifyPayment = async () => {
-      if (!paymentId) {
-        setEmailStatus('error');
-        return;
-      }
- 
-      try {
-        const token = localStorage.getItem('userToken');
-        const res = await axios.post(
-          `${link}/payments/verify/${paymentId}`,
-          {},
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
- 
-        if (res.data.success && res.data.status === 'approved') {
-          setEmailStatus('sent');
-        } else {
-          setEmailStatus('error');
-        }
-      } catch (err) {
-        console.error('Error verificando el pago:', err);
+useEffect(() => {
+  const verifyPayment = async () => {
+    if (!paymentId) {
+      setEmailStatus('error');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('userToken');
+      const res = await axios.post(
+        `${link}/api/payments/verify/${paymentId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (res.data.success && res.data.status === 'approved') {
+        localStorage.removeItem('cart');
+        setEmailStatus('sent');
+      } else {
         setEmailStatus('error');
       }
-    };
- 
-    verifyPayment();
- 
-    // Redirigir al perfil después de 30 segundos
-    const timer = setTimeout(() => {
-      navigate('/userprofile');
-    }, 30000);
- 
-    return () => clearTimeout(timer);
-  }, [navigate, paymentId]);
+    } catch (err) {
+      console.error('Error verificando el pago:', err);
+      setEmailStatus('error');
+    }
+  };
+
+  verifyPayment();
+
+  // Redirigir al perfil después de 30 segundos
+  const timer = setTimeout(() => {
+    navigate('/userprofile');
+  }, 30000);
+
+  return () => clearTimeout(timer);
+}, [navigate, paymentId]);
  
   return (
     <div className="min-h-screen bg-black flex items-center justify-center px-4 relative overflow-hidden">

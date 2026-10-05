@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { ChevronRight, ChevronLeft, Download, Search, Eye, Trash } from 'lucide-react';
 import Swal from 'sweetalert2';
 import logobuff from '../assets/BLogo4K.png';
+import visa from '../assets/visa.svg';
+import mc from '../assets/mc.svg';
 import { 
   PDFDownloadLink, 
   Document, 
@@ -17,6 +19,9 @@ const link = import.meta.env.PROD
   ? import.meta.env.VITE_BACKEND_URL
   : 'http://localhost:3000'
 
+  const authHeaders = () => ({
+  Authorization: `Bearer ${localStorage.getItem('userToken')}`,
+});
 const styles = StyleSheet.create({
   page: {
     backgroundColor: '#FFFFFF',
@@ -110,6 +115,24 @@ const styles = StyleSheet.create({
   },
 });
 
+const PAYMENT_METHOD_LABEL = {
+  visa: 'Visa',
+  debvisa: 'Visa Débito',
+  master: 'Mastercard',
+  debmaster: 'Mastercard Débito',
+  amex: 'American Express',
+  diners: 'Diners',
+  codensa: 'Crédito Fácil Codensa',
+  pse: 'PSE',
+  efecty: 'Efecty',
+};
+const METHOD_LOGO = {
+  visa,
+  debvisa: visa,
+  master: mc,
+  debmaster: mc,
+  mastercard: mc,
+};
 
 const OrdersPDF = ({ orders }) => {
   return (
@@ -189,6 +212,28 @@ const OrdersPDF = ({ orders }) => {
 };
 
 const PRODUCTS_PER_PAGE = 10;
+
+const PAYMENT_BADGE = {
+  paid:     { label: 'Pagada',      cls: 'bg-[#00FF37]/10 text-[#00FF37] border-[#00FF37]/30' },
+  pending:  { label: 'Pendiente',   cls: 'bg-yellow-400/10 text-yellow-400 border-yellow-400/30' },
+  failed:   { label: 'Rechazada',   cls: 'bg-[#FF137A]/10 text-[#FF137A] border-[#FF137A]/30' },
+  refunded: { label: 'Reembolsada', cls: 'bg-white/10 text-white/60 border-white/20' },
+};
+
+const STATUS_DETAIL_TEXT = {
+  cc_rejected_insufficient_amount: 'Fondos insuficientes',
+  cc_rejected_bad_filled_security_code: 'CVV incorrecto',
+  cc_rejected_bad_filled_date: 'Fecha de vencimiento incorrecta',
+  cc_rejected_bad_filled_card_number: 'Número de tarjeta incorrecto',
+  cc_rejected_bad_filled_other: 'Datos de tarjeta incorrectos',
+  cc_rejected_call_for_authorize: 'Requiere autorización del banco',
+  cc_rejected_card_disabled: 'Tarjeta inhabilitada',
+  cc_rejected_duplicated_payment: 'Pago duplicado',
+  cc_rejected_high_risk: 'Rechazado por prevención de fraude',
+  cc_rejected_max_attempts: 'Límite de intentos superado',
+  cc_rejected_other_reason: 'Rechazado por el banco',
+};
+
 const Listaordenes = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
@@ -204,9 +249,13 @@ const Listaordenes = () => {
     }, []);
   const fetchOrders = async () => {
     try {
-      const response = await fetch(`${link}/api/orders/`);
+      const response = await fetch(`${link}/api/orders/`, { headers: authHeaders() });
       if (!response.ok) {
-        throw new Error("Error al obtener los productos");
+        throw new Error(
+          response.status === 401 || response.status === 403
+            ? 'No tienes permiso para ver las órdenes'
+            : 'Error al obtener las órdenes'
+        );
       }
       const data = await response.json();
       
@@ -244,6 +293,7 @@ const Listaordenes = () => {
       try {
         const response = await fetch(`${link}/api/orders/${orderid}`, {
           method: 'DELETE',
+          headers: authHeaders(),
         });
         if (!response.ok) {
           throw new Error('Error al eliminar el producto');
@@ -263,17 +313,16 @@ const Listaordenes = () => {
     }
   };
 
-  const filteredOrders = orders.filter(order => {
-    const term = searchTerm.toLowerCase();
-    return (
-      order.customer.fullName.toLowerCase().includes(term) ||
-      String(order.totals.total).includes(term) ||
-      order.payment.cardLast4.includes(term) ||
-      order.shipping.city.toLowerCase().includes(term) ||
-      order.shipping.state.toLowerCase().includes(term)
-    );
-  });
-  
+const filteredOrders = orders.filter(order => {
+  const term = searchTerm.toLowerCase();
+  return (
+    (order.customer?.fullName || '').toLowerCase().includes(term) ||
+    String(order.totals?.total ?? '').includes(term) ||
+    (order.payment?.cardLast4 || '').includes(term) ||
+    (order.paymentStatus || '').includes(term)
+  );
+})
+.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const totalFiltered = filteredOrders.length;
   const totalPages = Math.ceil(totalFiltered / PRODUCTS_PER_PAGE);  
   
@@ -290,38 +339,44 @@ const Listaordenes = () => {
   const currentOrders = filteredOrders.slice(indexOfFirst, indexOfLast);
 
   // Renderizar el status con el color correspondiente
-  const renderStatus = (status) => {
-    let bgColor, textColor, dotColor;
-    
-    switch(status) {
-      case 'paid':
-        bgColor = 'bg-green-100';
-        textColor = 'text-green-800';
-        dotColor = 'bg-green-500';
-        break;
-      case 'pending':
-        bgColor = 'bg-yellow-100';
-        textColor = 'text-yellow-800';
-        dotColor = 'bg-yellow-500';
-        break;
-      case 'failed':
-        bgColor = 'bg-red-100';
-        textColor = 'text-red-800';
-        dotColor = 'bg-red-500';
-        break;
-      default:
-        bgColor = 'bg-gray-100';
-        textColor = 'text-gray-800';
-        dotColor = 'bg-gray-500';
-    }
+  const renderPaymentStatus = (order) => {
+  const badge = PAYMENT_BADGE[order.paymentStatus] || PAYMENT_BADGE.pending;
+  return (
+    <div>
+      <span className={`px-3 py-1 rounded-full text-xs font-Urbanist font-semibold border ${badge.cls}`}>
+        {badge.label}
+      </span>
+      {order.paymentStatus === 'failed' && order.paymentStatusDetail && (
+        <p className="text-xs text-white/40 font-Urbanist mt-1">
+          {STATUS_DETAIL_TEXT[order.paymentStatusDetail] || order.paymentStatusDetail}
+        </p>
+      )}
+    </div>
+  );
+};
+    const renderCard = (order) => {
+      const method = order.payment?.method;
+      if (!method) return '—';
 
-    return (
-      <div className={`flex items-center px-3 py-1 rounded-full ${bgColor} ${textColor}`}>
-        <div className={`w-2 h-2 rounded-full ${dotColor} mr-2`}></div>
-        {status}
-      </div>
-    );
-  };
+      const key = String(method).toLowerCase();
+      const label = PAYMENT_METHOD_LABEL[key] || method;
+      const logo = METHOD_LOGO[key];
+      const last4 = order.payment?.cardLast4;
+
+      return (
+        <div className="flex items-center gap-0">
+          {logo && (
+            <img src={logo} alt={label} className="h-10 w-16 object-contain shrink-0" />
+          )}
+          <div>
+            <div className="text-white">{label}</div>
+            {/^\d{4}$/.test(last4 || '') && (
+              <div className="text-xs">•••• {last4}</div>
+            )}
+          </div>
+        </div>
+      );
+    };
 
   return (
     <div className="relative bg-transparent backdrop-blur-md rounded-[20px] shadow-[0_0_20px_5px_rgba(0,0,0,0.15)] shadow-[#000000]/70 p-6 overflow-hidden"
@@ -380,7 +435,7 @@ const Listaordenes = () => {
                 <th className="text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Fecha Order</th>
                 <th className="text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Comprador</th>
                 <th className="text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Status</th>
-                <th className="text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Digitos Tarjeta</th>
+                <th className="text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Método de pago</th>
                 <th className="text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Total</th>
                 <th className="text-left py-4 px-5 text-xs font-Urbanist font-semibold text-white/50 uppercase tracking-wider">Actiones</th>
               </tr>
@@ -389,17 +444,17 @@ const Listaordenes = () => {
               {currentOrders.map((order) => (
                 <tr key={order._id} className="hover:bg-white/5 transition-colors">
                   <td className="p-4 font-Urbanist font-medium text-white">#{order._id}</td>
-                  <td className="p-4 font-Urbanist text-white/60">{new Date(order.updatedAt).toLocaleDateString('es-CO')}</td>
+                  <td className="p-4 font-Urbanist text-white/60">{new Date(order.createdAt).toLocaleDateString('es-CO')}</td>
                   <td className="p-4">
-                    <div className="font-Urbanist font-medium text-white">{order.customer.fullName}</div>
+                    <div className="font-Urbanist font-medium text-white">{order.customer?.fullName}</div>
                   </td>
                   <td className="p-4">
-                    {renderStatus(order.status)}
+                    {renderPaymentStatus(order)}
                   </td>
                   <td className="p-4 font-Urbanist text-white/60">
-                    {order.payment?.cardLast4}
+                    {renderCard(order)}
                   </td>
-                  <td className="p-4 font-Urbanist font-medium text-white">${(order.totals.total).toLocaleString('en-US')}</td>
+                  <td className="p-4 font-Urbanist font-medium text-white">${(order.totals?.total ?? 0).toLocaleString('en-US')}</td>
                   <td className="p-4">
                     <div className="flex gap-2">
                       <button

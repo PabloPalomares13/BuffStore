@@ -30,24 +30,28 @@ const orderSchema = new mongoose.Schema({
   },
   payment: {
     cardName: String,
-    cardLast4: String
+    cardLast4: String,
+    method: String  
   },
   totals: {
     subtotal: Number,
     taxes: Number,
     total: Number
   },
-  status: {
+    status: {
     type: String,
     enum: ['pending', 'paid', 'shipped', 'delivered', 'cancelled'],
-    default: 'paid'
+    default: 'pending'          // antes: 'paid'
   },
   paymentStatus: {
     type: String,
     enum: ['pending', 'paid', 'failed', 'refunded'],
     default: 'pending'
   },
-
+  paymentStatusDetail: {        
+    type: String,
+    default: ''
+  },
   paymentId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Payment',
@@ -112,6 +116,7 @@ orderSchema.index({ paymentStatus: 1, createdAt: -1 });
 // Método para marcar como pagada
 orderSchema.methods.markAsPaid = function(paymentId) {
   this.paymentStatus = 'paid';
+  this.status = 'paid';
   this.paymentId = paymentId;
   this.paidAt = new Date();
   this.orderStatus = 'processing';

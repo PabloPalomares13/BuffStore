@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Loader2,X,CheckCircle,Video,  ShoppingCart, Plus, Minus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2,X,Heart } from 'lucide-react';
+import { getFavorites, toggleFavorite } from '../components/hooks/favorites';
 import ReviewsSection from '../components/ReviewsSection';
 import StartRating from '../components/ui/StartRating';
 const ProductDetail = () => {
@@ -17,6 +18,9 @@ const ProductDetail = () => {
   const [activeTab, setActiveTab] = useState('description');
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [loadingRelated, setLoadingRelated] = useState(false);
+  const [favorites, setFavorites] = useState([]);
+  const [favLoading, setFavLoading] = useState(false);
+  const [favToast, setFavToast] = useState(null); 
 
   // Volumen inicial del video del visor principal (0 a 1). El usuario puede
   // subirlo o bajarlo después con el control nativo del reproductor.
@@ -144,6 +148,43 @@ const ProductDetail = () => {
     }
   };  
 
+  useEffect(() => {
+    getFavorites().then(setFavorites).catch(() => setFavorites([]));
+  }, []);
+
+  // ¿El producto actual ya está en favoritos?
+  const isFavorite = useMemo(
+    () => !!product && favorites.some((f) => f._id === product._id),
+    [favorites, product]
+  );
+
+  // Oculta el toast automáticamente
+  useEffect(() => {
+    if (!favToast) return undefined;
+    const t = setTimeout(() => setFavToast(null), 2500);
+    return () => clearTimeout(t);
+  }, [favToast]);
+
+  const handleToggleFavorite = async () => {
+    if (!product || favLoading) return;
+    setFavLoading(true);
+    const wasFavorite = isFavorite;
+    try {
+      const updated = await toggleFavorite(product, favorites);
+      setFavorites(updated);
+      setFavToast({
+        added: !wasFavorite,
+        text: wasFavorite ? 'Eliminado de favoritos' : 'Guardado en favoritos',
+      });
+    } catch (err) {
+      console.error('Error actualizando favoritos:', err);
+      setFavToast({ added: false, text: 'No se pudo actualizar favoritos' });
+    } finally {
+      setFavLoading(false);
+    }
+  };
+
+
   const nextMedia = () => {
     if (orderedMedia.length === 0) return;
     const newIndex = (selectedMediaIndex + 1) % orderedMedia.length;
@@ -185,7 +226,7 @@ const ProductDetail = () => {
   const renderMedia = () => {
     if (orderedMedia.length === 0) {
       return (
-        <div className="w-full h-96 bg-white/5 border border-white/20 rounded-[20px] flex items-center justify-center">
+        <div className="w-full h-136 bg-white/5 border border-white/20 rounded-[20px] flex items-center justify-center">
           <p className="text-gray-400">Sin imagen disponible</p>
         </div>
       );
@@ -211,7 +252,7 @@ const ProductDetail = () => {
             e.target.volume = INITIAL_VIDEO_VOLUME;
           }}
           onClick={() => setPreviewMedia({ type: 'video', url: currentMedia.url, thumbnail: currentMedia.thumbnail })}
-          className="w-full h-106 rounded-[20px] object-cover"
+          className="w-full h-136 rounded-[20px] object-cover"
           poster={currentMedia.thumbnail}
         >
           <source src={currentMedia.url} type="video/mp4" />
@@ -225,7 +266,7 @@ const ProductDetail = () => {
         src={currentMedia.url}
         alt={product.name}
         onClick={() => setPreviewMedia({ type: 'image', url: currentMedia.url })}
-        className="w-full h-106 rounded-[20px] object-cover"
+        className="w-full h-136 rounded-[20px] object-cover"
       />
     );
   };
@@ -353,7 +394,7 @@ const ProductDetail = () => {
         }} />
 
 
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           
           {/* Botón de regreso mejorado */}
           <nav className="mb-8">
@@ -371,7 +412,7 @@ const ProductDetail = () => {
             <div className="space-y-5">
               {/* Imagen principal */}
               <div className="relative">
-                <div className="bg-gradient-to-br from-[#FF137A]/20 h-110 via-[#000000] to-[#00FF37]/20  rounded-[20px] p-2 shadow-2xl">
+                <div className="shadow-2xl">
                   {renderMedia()}
                   
                   {/* Flechas de navegación */}
@@ -426,24 +467,7 @@ const ProductDetail = () => {
                   ))}
                 </div>
               )}
-              {/* Features Grid */}
-              <div className="grid grid-cols-2 gap-4 text-white">
-                {[
-                  { icon: '⚡', title: 'Entrega Instantánea', text: 'Código digital en segundos' },
-                  { icon: '🔒', title: '100% Seguro', text: 'Compra protegida' },
-                  { icon: '💎', title: 'Original', text: 'Códigos oficiales' },
-                  { icon: '🎁', title: 'Bonus incluidos', text: 'Contenido exclusivo' }
-                ].map((feature, idx) => (
-                  <div 
-                    key={idx}
-                    className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-[20px] p-5 transition-all duration-300 hover:bg-white/15 hover:scale-105 hover:shadow-[0_0_16px_rgba(0,255,55,0.3)]"
-                  >
-                    <span className="text-3xl block mb-2">{feature.icon}</span>
-                    <div className="font-semibold text-sm mb-1">{feature.title}</div>
-                    <div className="text-gray-400 text-xs">{feature.text}</div>
-                  </div>
-                ))}
-              </div>
+              
             </div>
               
             {/* Información del producto */}
@@ -539,8 +563,30 @@ const ProductDetail = () => {
                     </div>
                   )}
 
-                  <button className="w-full py-4 px-6 bg-[#00FF37]/10 backdrop-blur-sm border border-[#00FF37]/20 text-white font-haze-defog font-semibold tracking-widest  uppercase tracking-wide rounded-full hover:bg-[#00FF37]/20 hover:scale-105 hover:shadow-[0_0_20px_rgba(0,255,55,0.4)] transition-all duration-300 relative overflow-hidden group">
-                    Añadir a favoritos
+                  <button
+                    type="button"
+                    onClick={handleToggleFavorite}
+                    disabled={favLoading}
+                    aria-pressed={isFavorite}
+                    aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+                    className={`w-full py-4 px-6 flex items-center justify-center gap-3 backdrop-blur-sm border text-white font-haze-defog font-semibold tracking-widest uppercase rounded-full hover:scale-105 transition-all duration-300 relative overflow-hidden group disabled:opacity-60 disabled:cursor-not-allowed
+                      ${isFavorite
+                        ? 'bg-[#FF137A]/20 border-[#FF137A]/60 shadow-[0_0_20px_rgba(255,19,122,0.45)] hover:bg-[#FF137A]/30'
+                        : 'bg-[#00FF37]/10 border-[#00FF37]/20 hover:bg-[#00FF37]/20 hover:shadow-[0_0_20px_rgba(0,255,55,0.4)]'
+                      }`}
+                  >
+                    {favLoading ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Heart
+                        className={`w-5 h-5 transition-all duration-300 ${
+                          isFavorite
+                            ? 'fill-[#FF137A] text-[#FF137A] scale-125'
+                            : 'text-[#00FF37] group-hover:scale-110'
+                        }`}
+                      />
+                    )}
+                    <span>{isFavorite ? 'En favoritos' : 'Añadir a favoritos'}</span>
                   </button>
                   
                 </div>
@@ -559,7 +605,24 @@ const ProductDetail = () => {
                   ))}
                 </div>
               </div>
-              
+              {/* Features Grid */}
+              <div className="grid grid-cols-2 gap-4 text-white">
+                {[
+                  { icon: '⚡', title: 'Entrega Instantánea', text: 'Código digital en segundos' },
+                  { icon: '🔒', title: '100% Seguro', text: 'Compra protegida' },
+                  { icon: '💎', title: 'Original', text: 'Códigos oficiales' },
+                  { icon: '🎁', title: 'Bonus incluidos', text: 'Contenido exclusivo' }
+                ].map((feature, idx) => (
+                  <div 
+                    key={idx}
+                    className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-[20px] p-6.5 transition-all duration-300 hover:bg-white/15 hover:scale-105 hover:shadow-[0_0_16px_rgba(0,255,55,0.3)]"
+                  >
+                    <span className="text-3xl block mb-2">{feature.icon}</span>
+                    <div className="font-semibold text-sm mb-1">{feature.title}</div>
+                    <div className="text-gray-400 text-xs">{feature.text}</div>
+                  </div>
+                ))}
+              </div>
             </div>
             
           </div>
@@ -575,7 +638,7 @@ const ProductDetail = () => {
                     <button
                       key={tab.id}
                       onClick={() => setActiveTab(tab.id)}
-                      className={`flex-1 py-5 px-4 font-haze uppercase tracking-wide font-semibold transition-colors relative ${
+                      className={`flex-1 py-5 px-4 font-haze-defog tracking-widest uppercase tracking-wide font-semibold transition-colors relative ${
                         activeTab === tab.id 
                           ? 'text-white bg-white/10' 
                           : 'text-gray-400 hover:text-white'
