@@ -3,6 +3,7 @@ const Comment = require('../models/Comment');
 const Product = require('../models/Product');
 const Order = require('../models/Order');
 const GameCode = require('../models/GameCode');
+const StoreFeedback = require('../models/StoreFeedback');
 
 const MAX_LIMIT = 50;
 const TEXT_MIN = 5;
@@ -259,5 +260,77 @@ exports.deleteReview = async (req, res) => {
   } catch (error) {
     console.error('Error eliminando reseña:', error);
     res.status(500).json({ message: 'Error al eliminar la reseña' });
+  }
+};
+const formatPublicName = (user) => {
+  const full = (user?.name || user?.username || '').trim();
+  if (!full) return 'Cliente';
+  const parts = full.split(/\s+/);
+  const lastInitial = parts.length > 1 ? ` ${parts[parts.length - 1][0].toUpperCase()}.` : '';
+  return `${parts[0]}${lastInitial}`;
+};
+
+exports.getPublicTestimonials = async (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit, 10) || 12, 30);
+    const minRating = Math.min(Math.max(parseInt(req.query.minRating, 10) || 4, 1), 5);
+
+    const [comments, feedbacks] = await Promise.all([
+      Comment.find({ rating: { $gte: minRating } })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .populate('user', 'name username avatar')
+        .populate('product', 'name')
+        .lean(),
+      StoreFeedback.find({ comment: { $ne: '' } })
+        .sort({ createdAt: -1 })
+        .limit(limit * 2) // se filtra por promedio abajo
+        .populate('user', 'name username avatar')
+        .lean()
+    ]);
+
+    const productReviews = comments
+      .filter((c) => c.user) // por si el usuario fue eliminado
+      .map((c) => ({
+        id: `c-${c._id}`,
+        type: 'product',
+        name: formatPublicName(c.user),
+        image: c.user.avatar || null,
+        handle: c.product?.name ? `Reseña de ${c.product.name}` : 'Reseña de producto',
+        text: c.text,
+        rating: c.rating,
+        verified: false, // Comment no está ligado a una orden, por eso no se marca como verificado
+        date: c.createdAt
+      }));
+
+    const storeReviews = feedbacks
+      .filter((f) => f.user)
+      .map((f) => {
+        const { purchaseEase, deliverySpeed, paymentTrust } = f.ratings;
+        const avg = Math.round(((purchaseEase + deliverySpeed + paymentTrust) / 3) * 10) / 10;
+        return {
+          id: `s-${f._id}`,
+          type: 'store',
+          name: formatPublicName(f.user),
+          image: f.user.avatar || null,
+          handle: 'Experiencia de compra',
+          text: f.comment,
+          rating: Math.round(avg),
+          avg,
+          verified: true, // StoreFeedback exige una orden real
+          date: f.createdAt
+        };
+      })
+      .filter((f) => f.avg >= minRating);
+
+    const testimonials = [...productReviews, ...storeReviews]
+      .sort((a, b) => new Date(b.date) - new Date(a.date))
+      .slice(0, limit);
+
+    res.set('Cache-Control', 'public, max-age=300'); // 5 min
+    res.json({ success: true, testimonials });
+  } catch (error) {
+    console.error('Error obteniendo testimonios:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener testimonios' });
   }
 };

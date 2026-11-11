@@ -28,3 +28,10 @@ export const deleteReview = (reviewId) =>
   axios
     .delete(`${API}/${reviewId}`, { headers: authHeaders() })
     .then((res) => res.data);
+
+export const getPublicTestimonials = async ({ limit = 12, minRating = 4 } = {}) => {
+  const { data } = await axios.get(`${API}/testimonials`, {
+    params: { limit, minRating }
+  });
+  return data.testimonials || [];
+};

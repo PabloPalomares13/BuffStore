@@ -6,7 +6,7 @@ import { getFeaturedProducts } from "../services/productService";
 import FeaturedProducts from "../components/ui/FeaturedProducts";
 import CatalogSection from '../components/ui/CatalogSection';
 import { ThreeDMarquee } from "@/components/ui/3d-marquee";
-
+import Testimonials from '../components/Testimonials';
 
 import 'react-lazy-load-image-component/src/effects/blur.css'; 
 import fondo from "../assets/fondogradient.png";
@@ -351,75 +351,7 @@ const cardsData = [
         
       </div>
           
-      <style>{`
-        @keyframes marqueeScroll {
-            0% { transform: translateX(0%); }
-            100% { transform: translateX(-50%); }
-        }
-
-        .marquee-inner {
-            animation: marqueeScroll 25s linear infinite;
-        }
-
-        .marquee-reverse {
-            animation-direction: reverse;
-        }
-
-        .marquee-inner:hover {
-            animation-play-state: paused;
-        }
-    `}</style>
-    <div className="w-full my-20 bg-black relative" style={{ fontFamily: '"Urbanist", sans-serif' }}>
-      
-      <div className="pointer-events-none absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full bg-[#FF137A] opacity-40 blur-[120px]" />
-    <div className="pointer-events-none absolute -bottom-32 -right-32 w-[500px] h-[500px] rounded-full bg-[#00FF37] opacity-40 blur-[120px]" />
- 
-    <div className="relative z-10">
-    {/* Header Section - CON padding */}
-    <div className="flex flex-col items-start px-8 md:px-16 lg:px-24 text-sm max-w-6xl mx-auto mb-12">
-        <div className="flex items-center mr-auto gap-2 text-[#00ff37] bg-[#00ff37]/20 rounded-full px-3 py-1 border border-[#00ff37]">
-            <svg width="13" height="14" viewBox="0 0 13 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M1.613 8.2a.62.62 0 0 1-.553-.341.59.59 0 0 1 .076-.637l6.048-6.118a.31.31 0 0 1 .375-.069c.061.033.11.084.137.147a.3.3 0 0 1 .014.197L6.537 4.991a.59.59 0 0 0 .07.552.61.61 0 0 0 .504.257h4.276a.62.62 0 0 1 .553.341.59.59 0 0 1-.076.637l-6.048 6.119a.31.31 0 0 1-.375.067.295.295 0 0 1-.15-.344l1.172-3.61a.59.59 0 0 0-.07-.553.61.61 0 0 0-.504-.257z" 
-                    stroke="currentColor" strokeMiterlimit="5.759" strokeLinecap="round" />
-            </svg>
-            <span className="font-medium">Testimonios</span>
-        </div>
-        
-        <h1 className="text-3xl md:text-6xl font-medium bg-gradient-to-r from-slate-100 to-slate-400 text-transparent bg-clip-text mt-4">
-            La mejor prueba es la experiencia de nuestros usuarios.
-        </h1>
-        
-        <p className="text-slate-400 mt-4 md:text-lg sm:text-md max-w-2xl">
-            La mejor prueba es la experiencia de nuestros usuarios.
-Si nuestro servicio cumplió tus expectativas, déjanos una reseña y ayúdanos a seguir mejorando.
-        </p>
-    </div>
-
-    {/* Marquee Container - CON padding */}
-    <div className="px-8 md:px-16 lg:px-24">
-        <div className="marquee-row w-full mx-auto max-w-7xl overflow-hidden relative rounded-t-md mt-8">
-            <div className="absolute left-0 top-0 h-full w-20 md:w-32 z-10 pointer-events-none bg-gradient-to-r from-[#000000] to-transparent"></div>
-            <div className="marquee-inner flex transform-gpu min-w-[200%] py-5">
-                {[...cardsData, ...cardsData].map((card, index) => (
-                    <CreateCard key={index} card={card} />
-                ))}
-            </div>
-            <div className="absolute right-0 top-0 h-full w-20 md:w-32 z-10 pointer-events-none bg-gradient-to-l from-[#000000] to-transparent"></div>
-        </div>
-
-        <div className="marquee-row w-full mx-auto max-w-7xl overflow-hidden relative rounded-b-md">
-            <div className="absolute left-0 top-0 h-full w-20 md:w-32 z-10 pointer-events-none bg-gradient-to-r from-[#000000] to-transparent"></div>
-            <div className="marquee-inner marquee-reverse flex transform-gpu min-w-[200%] py-5">
-                {[...cardsData, ...cardsData].map((card, index) => (
-                    <CreateCard key={index} card={card} />
-                ))}
-            </div>
-            <div className="absolute right-0 top-0 h-full w-20 md:w-32 z-10 pointer-events-none bg-gradient-to-l from-[#000000] to-transparent"></div>
-        </div>
-      </div>
-    </div>
-    
-</div>
+      <Testimonials />
     </>
     )
 }    
